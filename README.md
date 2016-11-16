@@ -64,6 +64,8 @@ The Tado Homey app uses the unofficial my.tado.com API, and does not directly co
 
 ## Changelog
 
+- 0.5.5 Possible fix for the humidity insight (thanks to ZperX)
+
 - 0.5.4 Quick bugfix for new installations
 
 - 0.5.3 More bugfixes: fix humidity insight, fix pairing issue, fix loss of card values after Homey/app restarts
@@ -84,6 +86,8 @@ If you would like to have a new feature implemented, use the Github Issue system
 ## Contributions
 
 - mauriceb for the additional extensive my.tado.com API information
+
+- ZperX for a possible solution with the humidity insight
 
 
 ## Legal

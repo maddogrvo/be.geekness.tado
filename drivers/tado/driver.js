@@ -152,7 +152,18 @@ var self = module.exports = {
 
                 callback( null, device.state.measure_temperature );
             }
-        }
+        },
+     	measure_humidity: {
+            get: function( device_data, callback ) {
+                
+                var device = devices[ device_data.id ];
+                if (typeof device == 'undefined') return callback( new Error("invalid_device") );
+
+                log('[TADO] Capability: Get Measure Humidity (= ' + device.state.measure_humidity + ')');
+
+                callback( null, device.state.measure_humidity );
+            }
+	 	}
     },
 
     pair: function( socket ) {
