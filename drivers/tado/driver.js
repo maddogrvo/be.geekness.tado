@@ -228,7 +228,7 @@ function getAccessToken( callback ) {
     log('[TADO] Getting access token');
 
     request({
-        method: 'GET',
+        method: 'POST',
         url: 'https://my.tado.com/oauth/token?client_id=tado-webapp&grant_type=password&scope=home.user&username=' + login + '&password=' + password,
         json : true
     }, function ( err, response, body ) {
@@ -300,29 +300,34 @@ function getStateInternal( device_data, callback ) {
 
         var value = null;
 
-        if (body !== undefined && body.setting !== undefined && body.setting.temperature !== undefined && body.setting.temperature.celsius !== undefined) {
-        // set state
-            value = (body.setting.temperature.celsius * 2).toFixed() / 2;
-            if (devices[ device_data.id ].state.target_temperature != value) {
-                devices[ device_data.id ].state.target_temperature = value;
-                self.realtime( device_data, 'target_temperature', value );
+        if (body !== undefined) {
+
+            if (body.setting !== undefined && body.setting.temperature !== undefined && body.setting.temperature.celsius !== undefined) {
+            // set state
+                value = (body.setting.temperature.celsius * 2).toFixed() / 2;
+                if (devices[ device_data.id ].state.target_temperature != value) {
+                    devices[ device_data.id ].state.target_temperature = value;
+                    self.realtime( device_data, 'target_temperature', value );
+                }
             }
-        }
-        if (body !== undefined && body.sensorDataPoints !== undefined && body.sensorDataPoints.insideTemperature !== undefined && body.sensorDataPoints.insideTemperature.celsius !== undefined) {
-            value = (body.sensorDataPoints.insideTemperature.celsius * 2).toFixed() / 2;
-            if (devices[ device_data.id ].state.measure_temperature != value) {
-                devices[ device_data.id ].state.measure_temperature = value;
-                self.realtime( device_data, 'measure_temperature', value );
-            }
-        }
-        if (body !== undefined && body.sensorDataPoints !== undefined && body.sensorDataPoints.humidity !== undefined && body.sensorDataPoints.humidity.percentage !== undefined) {
-            value = body.sensorDataPoints.humidity.percentage;
-            if (devices[ device_data.id ].state.humidity != value) {
-                devices[ device_data.id ].state.humidity = value;
-                Homey.manager('flow').trigger('humidity', { percentage: value });
-                Homey.manager('insights').createEntry( 'humidity', value, new Date(), function(err, success){
-                    if( err ) return Homey.error(err);
-                });
+            if (body.sensorDataPoints !== undefined) {
+                if (body.sensorDataPoints.insideTemperature !== undefined && body.sensorDataPoints.insideTemperature.celsius !== undefined) {
+                    value = (body.sensorDataPoints.insideTemperature.celsius * 2).toFixed() / 2;
+                    if (devices[ device_data.id ].state.measure_temperature != value) {
+                        devices[ device_data.id ].state.measure_temperature = value;
+                        self.realtime( device_data, 'measure_temperature', value );
+                    }
+                }
+                if (body.sensorDataPoints.humidity !== undefined && body.sensorDataPoints.humidity.percentage !== undefined) {
+                    value = body.sensorDataPoints.humidity.percentage;
+                    if (devices[ device_data.id ].state.humidity != value) {
+                        devices[ device_data.id ].state.humidity = value;
+                        Homey.manager('flow').trigger('humidity', { percentage: value });
+                        Homey.manager('insights').createEntry( 'humidity', value, new Date(), function(err, success){
+                            if( err ) return Homey.error(err);
+                        });
+                    }
+                }
             }
         }
 
