@@ -1,5 +1,6 @@
 "use strict";
 
+var _               = require('lodash');
 var path            = require('path');
 var request         = require('request');
 var extend          = require('util')._extend;
@@ -62,7 +63,7 @@ var self = module.exports = {
                 if (devices[i].data) {
                     updateTado( devices[i].data, 'DELETE');
                 }
-            };
+            }
 
             callback( null, true ); 
         });
@@ -78,7 +79,7 @@ var self = module.exports = {
                         termination: {type: "MANUAL"}
                     });
                 }
-            };
+            }
 
             callback( null, true ); 
         });
@@ -225,6 +226,11 @@ function getAccessToken( callback ) {
 
     callback = callback || function(){};
 
+    if (devices.length == 0) {
+        log('[TADO] No devices registered');
+        return;
+    }
+
     log('[TADO] Getting access token');
 
     request({
@@ -301,32 +307,31 @@ function getStateInternal( device_data, callback ) {
         var value = null;
 
         if (body !== undefined) {
-
-            if (body.setting !== undefined && body.setting.temperature !== undefined && body.setting.temperature.celsius !== undefined) {
+            value = _.get(body, 'setting.temperature.celsius');
+            if (value !== undefined && value !== null) {
             // set state
-                value = (body.setting.temperature.celsius * 2).toFixed() / 2;
                 if (devices[ device_data.id ].state.target_temperature != value) {
                     devices[ device_data.id ].state.target_temperature = value;
                     self.realtime( device_data, 'target_temperature', value );
                 }
             }
-            if (body.sensorDataPoints !== undefined) {
-                if (body.sensorDataPoints.insideTemperature !== undefined && body.sensorDataPoints.insideTemperature.celsius !== undefined) {
-                    value = (body.sensorDataPoints.insideTemperature.celsius * 2).toFixed() / 2;
-                    if (devices[ device_data.id ].state.measure_temperature != value) {
-                        devices[ device_data.id ].state.measure_temperature = value;
-                        self.realtime( device_data, 'measure_temperature', value );
-                    }
+
+            value = _.get(body, 'sensorDataPoints.insideTemperature.celsius');
+            if (value !== undefined && value !== null) {
+                if (devices[ device_data.id ].state.measure_temperature != value) {
+                    devices[ device_data.id ].state.measure_temperature = value;
+                    self.realtime( device_data, 'measure_temperature', value );
                 }
-                if (body.sensorDataPoints.humidity !== undefined && body.sensorDataPoints.humidity.percentage !== undefined) {
-                    value = body.sensorDataPoints.humidity.percentage;
-                    if (devices[ device_data.id ].state.humidity != value) {
-                        devices[ device_data.id ].state.humidity = value;
-                        Homey.manager('flow').trigger('humidity', { percentage: value });
-                        Homey.manager('insights').createEntry( 'humidity', value, new Date(), function(err, success){
-                            if( err ) return Homey.error(err);
-                        });
-                    }
+            }
+
+            value = _.get(body, 'sensorDataPoints.humidity.percentage');
+            if (value !== undefined && value !== null) {
+                if (devices[ device_data.id ].state.humidity != value) {
+                    devices[ device_data.id ].state.humidity = value;
+                    Homey.manager('flow').trigger('humidity', { percentage: value });
+                    Homey.manager('insights').createEntry( 'humidity', value, new Date(), function(err, success){
+                        if( err ) return Homey.error(err);
+                    });
                 }
             }
         }
@@ -348,21 +353,23 @@ function getStateExternal( device_data, callback ) {
     }, function(err, result, body){
         if ( err && callback ) return callback(err);
 
-        var value = null;
+        var value = null, value_rounded = null;
 
-        if (body !== undefined && body.outsideTemperature !== undefined) {
+        value = _.get(body, 'outsideTemperature.celsius');
+        if (value !== undefined && value !== null) {
         // set state
-            value = (body.outsideTemperature.celsius * 2).toFixed() / 2;
+            value_rounded = Math.round(value * 2) / 2;
             if (devices[ device_data.id ].state.outside_temperature != value) {
                 devices[ device_data.id ].state.outside_temperature = value;
-                Homey.manager('flow').trigger('outside_temperature', { temperature: value });
+                Homey.manager('flow').trigger('outside_temperature', { temperature: value_rounded });
                 Homey.manager('insights').createEntry( 'outside_temperature', value, new Date(), function(err, success){
                     if( err ) return Homey.error(err);
                 });
             }
         }
-        if (body !== undefined && body.solarIntensity !== undefined) {
-            value = body.solarIntensity.percentage;
+
+        value = _.get(body, 'solarIntensity.percentage');
+        if (value !== undefined && value !== null) {
             if (devices[ device_data.id ].state.solar_intensity != value) {
                 devices[ device_data.id ].state.solar_intensity = value;
                 Homey.manager('flow').trigger('solar_intensity', { intensity: value });
@@ -371,8 +378,9 @@ function getStateExternal( device_data, callback ) {
                 });
             }
         }
-        if (body !== undefined && body.weatherState !== undefined) {
-            value = body.weatherState.value;
+
+        value = _.get(body, 'weatherState.value');
+        if (value !== undefined && value !== null) {
             if (devices[ device_data.id ].state.weather_state != value) {
                 devices[ device_data.id ].state.weather_state = value;
                 Homey.manager('flow').trigger('weather', { state: value });

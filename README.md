@@ -64,6 +64,8 @@ The Tado Homey app uses the unofficial my.tado.com API, and does not directly co
 
 ## Changelog
 
+- 0.5.7 Fix for a regression, better handling of Tado API key existence via lodash get()
+
 - 0.5.6 Fix for Tado web API change (getAccessToken)
 
 - 0.5.5 Possible fix for the humidity insight (thanks to ZperX)
