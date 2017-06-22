@@ -64,21 +64,32 @@ The Tado Homey app uses the unofficial my.tado.com API, and does not directly co
 
 ## Changelog
 
-- 0.5.7 Fix for a regression, better handling of Tado API key existence via lodash get()
+### 0.5.7 
+    - Fix for a regression
+    - Better handling of Tado API key existence via lodash get()
+    - Added option to download logs (via settings)
 
-- 0.5.6 Fix for Tado web API change (getAccessToken)
+### 0.5.6 
+    - Fix for Tado web API change (getAccessToken)
 
-- 0.5.5 Possible fix for the humidity insight (thanks to ZperX)
+### 0.5.5 
+    - Possible fix for the humidity insight (thanks to ZperX)
 
-- 0.5.4 Quick bugfix for new installations
+### 0.5.4 
+    - Quick bugfix for new installations
 
-- 0.5.3 More bugfixes: fix humidity insight, fix pairing issue, fix loss of card values after Homey/app restarts
+### 0.5.3 
+    - More bugfixes: fix humidity insight, fix pairing issue, fix loss of card values after Homey/app restarts
 
-- 0.5.2 Bugfixes and compatibility update
+### 0.5.2 
+    - Bugfixes
+    - Compatibility update
 
-- 0.5.1 New actions, triggers and conditions
+### 0.5.1 
+    - New actions, triggers and conditions
 
-- 0.5.0 Initial stable version
+### 0.5.0 
+    - Initial stable version
 
 
 ## Bugs & Features

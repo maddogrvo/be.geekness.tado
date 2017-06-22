@@ -4,10 +4,9 @@
     </head>
     <body>
 
-        <h1>Tado login and password</h1>
-        <p>We need your Tado account to communicate with the https://my.tado.com website. Your account details will be stored on your Homey, and will only be sent to the Tado webserver. (This will probably change when Tado launches their public API)</p>
-
         <fieldset>
+            <legend>Tado login and password</legend>
+            <p>We need your Tado account to communicate with the https://my.tado.com website. Your account details will be stored on your Homey, and will only be sent to the Tado webserver. (This will probably change when Tado launches their public API)</p>
             <div class="field row">
                 <label for="login">Login</label>
                 <input id="login" type="text" value="" />
@@ -16,15 +15,34 @@
                 <label for="password">Password</label>
                 <input id="password" type="password" value="" />
             </div>
+            <div class="field row">
+                <label for="tado_secret">Tado Secret</label>
+                <input id="tado_secret" type="text" value="" />
+            </div>
+            <div class="field row">
+                <label for="debug">Enable Debug Log</label>
+                <select id="debug" name="debug"><option value="0">No<option value="1">Yes</select>
+            </div>
+            <p>The Tado Secret is available in https://my.tado.com/webapp/env.js, at the bottom, after 'clientSecret:'. This is a static global (for all users) value, but Tado can change this at any time.</p>
 
+            <button class="right" onclick="saveTado()">Save changes</button>
         </fieldset>
 
-        <button class="right" onclick="saveTado()">Save changes</button>
+        <fieldset>
+            <legend>Logs</legend>
+            <a href="/app/be.geekness.tado/userdata/tado.log" target="_blank">Download logs</a>
+        </fieldset>
 
-        <script language="JavaScript">
+<script language="JavaScript">
         function onHomeyReady(){
             Homey.get('login', function( err, login ) {
                 document.getElementById('login').value = login;
+            });
+            Homey.get('tado_secret', function( err, tado_secret ) {
+                document.getElementById('tado_secret').value = tado_secret;
+            });
+            Homey.get('debug', function( err, debug ) {
+                document.getElementById('debug').selectedIndex = debug;
             });
             Homey.ready();
         }
@@ -32,9 +50,11 @@
         function saveTado() {
             Homey.set('login', document.getElementById('login').value);
             Homey.set('password',  document.getElementById('password').value);
+            Homey.set('tado_secret',  document.getElementById('tado_secret').value);
+            Homey.set('debug',  document.getElementById('debug').selectedIndex);
             alert('Your settings have been saved, now you can add your Tado via Devices');
         }
-        </script>
+</script>
 
     </body>
 </html>
