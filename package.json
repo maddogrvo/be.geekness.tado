@@ -1,0 +1,25 @@
+{
+  "name": "be.geekness.tado",
+  "version": "1.0.0",
+  "description": "Unofficial Tado thermostat app for <a href=\"http://www.athom.nl\">Homey</a>.",
+  "main": "app.js",
+  "dependencies": {
+    "lodash": "^4.17.4",
+    "log4js": "^1.1.1",
+    "request": "^2.83.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/athombv/be.geekness.tado.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/athombv/be.geekness.tado/issues"
+  },
+  "homepage": "https://github.com/athombv/be.geekness.tado#readme"
+}
