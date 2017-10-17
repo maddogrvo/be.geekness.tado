@@ -6,11 +6,13 @@ var request  = require('request');
 var extend   = require('util')._extend;
 var log4js   = require('log4js');
 var fs       = require('fs');
-var api_url  = 'https://my.tado.com/api/v2';
 var logfile  = 'userdata/tado.log';
 var debug    = false;
 var loggedin = false;
 var devices  = {};
+
+var BASE_URL = 'https://my.tado.com/api/v2';
+var AUTH_URL = 'https://auth.tado.com';
 
 log4js.loadAppender('file');
 log4js.addAppender(log4js.appenders.file(logfile), 'tado');
@@ -255,7 +257,7 @@ function getAccessToken( callback ) {
 
     request({
         method: 'POST',
-        url: 'https://my.tado.com/oauth/token?client_id=tado-web-app&client_secret=' + tado_secret + '&grant_type=password&scope=home.user&username=' + login + '&password=' + password,
+        url: `${AUTH_URL}/oauth/token?client_id=tado-web-app&client_secret=${tado_secret}&grant_type=password&scope=home.user&username=${login}&password=${password}`,
         json : true
     }, function ( err, response, body ) {
         if (err) {
@@ -558,7 +560,7 @@ function call( options, callback ) {
 
     // create the options object
     options = extend({
-        path            : api_url + '/',
+        path            : BASE_URL + '/',
         method          : 'GET',
         access_token    : false,
         json            : true
@@ -573,13 +575,13 @@ function call( options, callback ) {
     // make the request
     request({
         method: options.method,
-        url: api_url + '/' + options.path,
+        url: BASE_URL + '/' + options.path,
         json: options.json,
         headers: {
             'Authorization': 'Bearer ' + options.access_token
         }
     }, function (err, result, body) {
-        logger.debug('[TADO-REQUEST] ' + options.method + ' ' + api_url + '/' + options.path);
+        logger.debug('[TADO-REQUEST] ' + options.method + ' ' + BASE_URL + '/' + options.path);
         logger.debug(options.json);
         logger.debug('[TADO-RESPONSE] ' + options.path);
         logger.debug(body);
