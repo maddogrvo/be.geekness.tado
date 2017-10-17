@@ -3,7 +3,7 @@
     "name": {
         "en": "Tado"
     },
-    "version": "0.5.8",
+    "version": "0.5.9",
     "compatibility": ">=0.8 || 1.x",
     "author": {
         "name": "HellHound"

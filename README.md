@@ -2,6 +2,8 @@
 
 Unofficial Tado thermostat app for <a href="http://www.athom.nl">Homey</a>.
 
+NOTE: This app was taken over by Athom on request of the developer. Only a small fix was made to enable users to authenticate with the Tado API again.
+
 <span class="badge-paypal"><a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=9JKAQMYRN36EE" title="Donate to this project using Paypal"><img src="https://img.shields.io/badge/paypal-donate-blue.svg" alt="PayPal donate button" /></a></span>
 
 ## Configuration
