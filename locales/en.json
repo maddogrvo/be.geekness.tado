@@ -1,11 +1,37 @@
 {
-    "pair": {
-        "start": {
-            "title": "Tado account details",
-            "add_title": "Enter your Tado login and password",
-            "add_text": "We need your Tado account to communicate with the https://my.tado.com website. Your account details will be stored on your Homey, and will only be sent to the Tado webserver. (This will probably change when Tado launches their public API)",
-            "add_button": "Add your Tado"
-        }
-    }
-}
+  "settings": {
+    "txt_login_info": "This app needs your account details in order to communicate with ",
+    "txt_login_info_link": "https://my.tado.com",
+    "txt_login_info2": ". This information will be stored locally on Homey and will only be used for secure communication between this app and the Tado webserver.",
+    "txt_login": "Login",
+    "txt_password": "Password",
+    "txt_secret_info": "The Tado Secret is available from ",
+    "txt_secret_link": "https://my.tado.com/webapp/env.js",
+    "txt_secret_info2": ", at the bottom, after 'clientSecret:'. This is a static global value (for all users), but Tado can change this at any time.<br>Use the long code WITHOUT the outer quotation marks.",
+    "txt_tado_secret": "Tado Secret",
+    "txt_update": "Update thermostat data every",
+    "txt_debug": "Enable Log",
+    "txt_yes": "Yes",
+    "txt_no": "No",
+    "txt_settings_save": "Save changes",
+    "txt_settings_saved": "Your settings have been saved, now you can add your Tado via Devices",
+    "txt_heating_zone": "Heating zone",
 
+    "txt_start_title": "Preparing...",
+    "txt_start_wait": "If this text does not disappear within seconds, go to Homey's Settings page and click on the tado menu item to check your account details and the tado-secret code.",
+
+    "night_clear": "Clear night",
+    "night_cloudy": "Cloudy night",
+    "cloudy": "Cloudy",
+    "cloudy_mostly": "Mostly cloudy",
+    "cloudy_partly": "Partly cloudy",
+    "foggy": "Foggy",
+    "drizzle": "Drizzle",
+    "scattered_rain": "Scattered rain",
+    "rain": "Rain",
+    "snow": "Snow",
+    "thunderstorms": "Thunderstorms",
+    "sun": "Sunny",
+    "windy": "Windy"
+  }
+}
