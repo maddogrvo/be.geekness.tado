@@ -1,21 +1,21 @@
 <script type="text/javascript">
-Homey.setTitle( __('pair.start.title') );
+Homey.setTitle( __('settings.txt_start_title') );
 
 Homey.on('authorized', function( success, callback ){
     if( success ) {
         Homey.showView('list_devices');
-    } else {    
+
+    } else {
         Homey.alert("Something went wrong!", 'error');
         Homey.done();
     }
 })
-
 Homey.emit('start');
+
 </script>
 
-<div class="">
-        <h1>Tado login and password</h1>
-        <p>We need your Tado account to communicate with the https://my.tado.com website. Please go to your Homey settings page, and click on the Tado menu item.</p>
-        
-        <p>Your account details will be stored on your Homey, and will only be sent to the Tado webserver. (This will probably change when Tado launches their public API)</p> 
+<div>
+    <h1>Tado login and password</h1>
+    <p><span data-i18n="settings.txt_login_info"></span><span data-i18n="settings.txt_login_info_link"></span><span data-i18n="settings.txt_login_info2"></span></p>
+    <p data-i18n="settings.txt_start_wait"></p>
 </div>
