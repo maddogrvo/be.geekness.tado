@@ -14,7 +14,7 @@ NOTE, October 2017, v0.6.1: This app was taken over by Athom on request of the d
 
 * Go to the Homey settings page for tado Heating.
 * Enter the same details that you use to access https://my.tado.com. This data is only saved locally on your Homey and will only be used for secure communication with my.tado.com. Nothing is shared with the developers or Athom.
-* Enter the "tado secret" (More info at settings).
+* Enter the "tado secret" (More info at settings). 
 
 * Go to "Zones & Devices" and add as many "tado Heating zone" devices as you have in your account.
 * On each "Heating zone" device click the little wrench and set your desired zone number. Zone numbers are shown in the URL (address bar) when you visit a Zone at https://my.tado.com with your web browser.
