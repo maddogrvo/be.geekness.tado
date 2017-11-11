@@ -11,16 +11,16 @@ NOTE, October 2017, v0.6.1: This app was taken over by Athom on request of the d
 ## Configuration
 
 * Go to the Homey settings page for tado Heating.
-* Enter the same details that you use to access https://my.tado.com. This data is only saved locally on your Homey and will only be used for secure communication with my.tado.com. Nothing is shared with the developers or Athom.
+* Enter the same details that you use to access https://my.tado.com. This data is saved locally on your Homey and will be used only for secure communication with my.tado.com. Nothing is shared with the developers, Athom or any other party.
 * Enter the "tado secret" (More info at settings). 
 
-* Go to "Zones & Devices" and add as many "tado Heating zone" devices as you have in your account.
+* Go to "Zones & Devices" and add as many "tado Heating zone" devices as you have in your account... or maybe first start with one.
 * On each "Heating zone" device click the little wrench and set your desired zone number. Zone numbers are shown in the URL (address bar) when you visit a Zone at https://my.tado.com with your web browser.
 * That's it!
 
 
 ## How does it work
-The app communicates with the unofficial my.tado.com API, and does not directly contact your tado devices. All data is sent over https, via https://my.tado.com.
+The app communicates with the unofficial API at my.tado.com, and does not directly contact your tado devices. All data is sent over https, via https://my.tado.com.
 
 Various items are available in the mobile app:
 * Thermostat dial. Only 0.5 degree steps for now, but we're working on the 0.1 degree resolution that tado offers for their Smart Thermostats.
@@ -44,7 +44,7 @@ Various items are available in the mobile app:
 * Open Window Detection has changed (detection token: true or false)
 * Smart Heating has changed (active token: true or false)
 
-- NOTE: Humidity may not be available for the first generation tado devices, which were used in the alpha & beta phases.
+- NOTE: Humidity is not available for the first generation tado devices, which were used in the alpha & beta phases.
 
 
 ### Flow Triggers (tado app-device)
@@ -59,7 +59,7 @@ Various items are available in the mobile app:
 
 
 ### Flow Actions (zone device)
-* Set the temperature (enable manual mode, only 0.5 degree steps for now. We're working on 0.1 degree resolution)
+* Set the temperature (Enables manual mode. 0.5 degree steps for now. We're working on a 0.1 degree resolution)
 * Activate Smart Heating
 * Turn heating off
 
