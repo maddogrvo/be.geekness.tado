@@ -75,45 +75,45 @@ Various items are available in the mobile app:
 ## Changelog
 
 ### 0.7.0
-    - Update/make-over bij Alex van den Berg (OpenMind_NL). Adding multiple zone control, extended mobile display and various bug fixes.
+  * Update/make-over bij Alex van den Berg (OpenMind_NL). Adding multiple zone control, extended mobile display and various bug fixes.
 
 ### 0.6.1
-    - On request of the original developer, Athom takes over and repairs log-in for some users.
+  * On request of the original developer, Athom takes over and repairs log-in for some users.
 
 --------------- Pre-Athom. Developer Hellhound ---------------
 
 ### 0.5.7
-    - Fix for a regression
-    - Better handling of Tado API key existence via lodash get()
-    - Added option to download logs (via settings)
+  * Fix for a regression
+  * Better handling of Tado API key existence via lodash get()
+  * Added option to download logs (via settings)
 
 ### 0.5.6
-    - Fix for Tado web API change (getAccessToken)
+  * Fix for Tado web API change (getAccessToken)
 
 ### 0.5.5
-    - Possible fix for the humidity insight (thanks to ZperX)
+  * Possible fix for the humidity insight (thanks to ZperX)
 
 ### 0.5.4
-    - Quick bugfix for new installations
+  * Quick bugfix for new installations
 
 ### 0.5.3
-    - More bugfixes: fix humidity insight, fix pairing issue, fix loss of card values after Homey/app restarts
+  * More bugfixes: fix humidity insight, fix pairing issue, fix loss of card values after Homey/app restarts
 
 ### 0.5.2
-    - Bugfixes
-    - Compatibility update
+  * Bugfixes
+  * Compatibility update
 
 ### 0.5.1
-    - New actions, triggers and conditions
+  * New actions, triggers and conditions
 
 ### 0.5.0
-    - Initial stable version
+  * Initial stable version
 
 
 ## Contributions
-- Hellhound: Took the original initiative and built the first versions.
-- mauriceb: Additional extensive my.tado.com API information
-- ZperX: Possible solution with the Insights
+* Hellhound: Took the original initiative and built the first versions.
+* mauriceb: Additional extensive my.tado.com API information
+* ZperX: Possible solution with the Insights
 
 
 ## Legal
