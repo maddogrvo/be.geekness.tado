@@ -109,6 +109,7 @@ Various items are available in the mobile app:
 
 
 ## Contributions
+* Alex van den Berg: First contribution v0.7.0
 * Hellhound: Took the original initiative and built the first versions.
 * mauriceb: Additional extensive my.tado.com API information
 * ZperX: Possible solution with the Insights
