@@ -2,114 +2,120 @@
 
 Unofficial Tado thermostat app for <a href="http://www.athom.nl">Homey</a>.
 
-NOTE: This app was taken over by Athom on request of the developer. Only a small fix was made to enable users to authenticate with the Tado API again. This app might not function as expected since it uses the unofficial Tado API.
+UPDATE, November 2017, v0.7.0: Fixed, rewritten and upgraded by Alex van den Berg (OpenMind_NL).
+Because the app uses the unofficial tado API, you might experience some problems whenever tado changes their API without a notice in advance. However, this is not expected to happen often. In general you may experience a more or less flawless operation when there is a good internet connection.
+
+NOTE, October 2017, v0.6.1: This app was taken over by Athom on request of the developer. Only a small fix was made to enable users to authenticate with the Tado API again.
+
 
 <span class="badge-paypal"><a href="https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=9JKAQMYRN36EE" title="Donate to this project using Paypal"><img src="https://img.shields.io/badge/paypal-donate-blue.svg" alt="PayPal donate button" /></a></span>
 
 ## Configuration
 
-Go to the Homey settings for Tado, and enter your Tado login and password, this is the same account you use to access https://my.tado.com. This data is only saved locally on your Homey, and not shared with either me or Athom.
+* Go to the Homey settings page for tado Heating.
+* Enter the same details that you use to access https://my.tado.com. This data is only saved locally on your Homey and only be used for secure communication with my.tado.com. Nothing is shared with the developers or Athom.
+* Enter the "tado secret" (More info at settings).
+
+* Go to "Zones & Devices" and add as many "tado Heating zone" devices as you have in your account.
+* On each "Heating zone" device click the little wrench and set your desired zone number. Zone numbers are shown in the URL (address bar) when you visit a Zone at https://my.tado.com with your web browser.
+* That's it!
 
 
 ## How does it work
+The app communicates with the unofficial my.tado.com API, and does not directly contact your tado devices. All data is sent over https, via https://my.tado.com.
 
-The Tado Homey app uses the unofficial my.tado.com API, and does not directly communicate with your Tado device. All data is sent over https, via https://my.tado.com.
-
-
-## Flow
-
-### Triggers (device)
-
-- The temperature changed (temperature token, in increments of 0.5 °C)
-
-- The target temperature changed (temperature token)
-
-
-### Triggers (app)
-
-- Weather state changed to ... (state token)
-
-- Weather changed (state token, different values: RAIN, CLEAR, NIGHT_CLOUDY, CLOUDY_PARTLY, THUNDERSTORMS, SUN, WINDY, etc.) (1)
-
-- Solar intensity changed (intensity token, value in percentage [0..100])
-
-- Outside temperature changed (temperature token, in increments of 0.5 °C)
-
-- [0.5.1] Humidity changed (percent token, value in percentage [0..100]). NOTE: Not available in first generation Tado devices, which were used in the alpha & beta phases.
+Various items are available in the mobile app:
+* Thermostat dial. Only 0.5 degree steps for now, but we're working on the 0.1 degree resolution that tado offers for their Smart Thermostats.
+* Button: Set zone to Smart Heating.
+* Displays:
+  * Temperature
+  * Heating power (%)
+  * Humidity
+  * Open Window detection
+  * Smart Heating activity
+  * Temperature outside (Offered by tado, from external provider)
+  * Solar intensity (Offered by tado, from external provider)
+  * Weather conditions (Offered by tado, from external provider)
 
 
-### Conditions (app)
+### Flow Triggers (zone device)
+* The temperature setting has changed (with temperature token)
+* The temperature measurement has changed (temperature token)
+* The humidity has changed (percentage token)
+* The heating power has changed (percentage token)
+* Open Window Detection has changed (detection token: true or false)
+* Smart Heating has changed (active token: true or false)
 
-- [0.5.1] Weather state is ... (dropdown with known weather states)
-
-
-### Actions (device)
-
-- Set the temperature (enable manual mode)
-
-
-### Actions (app)
-
-- [0.5.1] Set heating to auto
-
-- [0.5.1] Turn heating off (frost protection enabled)
+- NOTE: Humidity may not be available for the first generation tado devices, which were used in the alpha & beta phases.
 
 
-## Todo
+### Flow Triggers (tado app-device)
+* Outside temperature has changed (temperature token)
+* Solar intensity has changed (intensity (%) token)
+* The Weather changes (conditions token: [Sunny, Foggy, Thunderstorms etc.], id token: internally used id for comparisons etc.)
+* Weather state changes to... [Select from currently known possibilities] (id token)
 
-- Support for multiple zones, e.g. multiple Tado Heating devices, or Heating & Cooling devices
 
-- Ability to use Tado's presence detection within Homey's flow
+### Flow Conditions (tado app-device)
+* Weather state is/is not... [Select from currently known possibilities]
 
-- Trigger / Condition for when Tado switches between HOME / AWAY / SLEEP
+
+### Flow Actions (zone device)
+* Set the temperature (enable manual mode, only 0.5 degree steps for now. We're working on 0.1 degree resolution)
+* Activate Smart Heating
+* Turn heating off
+
+
+## NOT AVAILABLE (yet?):
+* Support for realtime update. Now you can select to refresh every 30 sec, up to an hour.
+* Support for other tado devices. (Airco control, Hot water)
+* Support for tado's presence detection, including Flow Trigger and Condition for the presence status. (HOME / AWAY / SLEEP)
 
 
 ## Changelog
 
-### 0.5.7 
+### 0.7.0
+    - Update/make-over bij Alex van den Berg (OpenMind_NL). Adding multiple zone control, extended mobile display and various bug fixes.
+
+### 0.6.1
+    - On request of the original developer, Athom takes over and repairs log-in for some users.
+
+--------------- Pre-Athom. Developer Hellhound ---------------
+
+### 0.5.7
     - Fix for a regression
     - Better handling of Tado API key existence via lodash get()
     - Added option to download logs (via settings)
 
-### 0.5.6 
+### 0.5.6
     - Fix for Tado web API change (getAccessToken)
 
-### 0.5.5 
+### 0.5.5
     - Possible fix for the humidity insight (thanks to ZperX)
 
-### 0.5.4 
+### 0.5.4
     - Quick bugfix for new installations
 
-### 0.5.3 
+### 0.5.3
     - More bugfixes: fix humidity insight, fix pairing issue, fix loss of card values after Homey/app restarts
 
-### 0.5.2 
+### 0.5.2
     - Bugfixes
     - Compatibility update
 
-### 0.5.1 
+### 0.5.1
     - New actions, triggers and conditions
 
-### 0.5.0 
+### 0.5.0
     - Initial stable version
 
 
-## Bugs & Features
-
-If you find a bug, please use the Github Issue system for this repository to submit the details of your bug report.
-
-If you would like to have a new feature implemented, use the Github Issue system to submit your feature request.
-
 ## Contributions
-
-- mauriceb for the additional extensive my.tado.com API information
-
-- ZperX for a possible solution with the humidity insight
+- Hellhound: Took the original initiative and built the first versions.
+- mauriceb: Additional extensive my.tado.com API information
+- ZperX: Possible solution with the Insights
 
 
 ## Legal
 
-This is an unofficial Tado app, built by/for the Homey community. The app is provided "as is", without warranty of any kind.
-
-
-
+This is an unofficial Tado app, built by and for the Homey community. The app is provided "as is", without warranty of any kind.
