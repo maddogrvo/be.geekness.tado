@@ -1,32 +1,252 @@
 {
     "id": "be.geekness.tado",
     "name": {
-        "en": "Tado"
+        "en": "tado° Heating",
+        "nl": "tado° Verwarming"
     },
-    "version": "0.6.1",
+    "version": "0.7.0",
     "compatibility": ">=0.8 || 1.x",
     "author": {
         "name": "HellHound"
     },
+  	"contributors": {
+  		"developers": [
+  			{
+  				"name": "Alex van den Berg",
+  				"website": "https://github.com/OpenMindNL",
+  				"email": "openmind_nl@hotmail.com"
+  			}
+  		]
+  	},
     "description": {
-        "en": "The Smart Thermostat for your Heating System"
+        "en": "The Smart Thermostats for your Heating System"
     },
     "category": "climate",
     "images": {
         "large": "assets/images/large.jpg",
         "small": "assets/images/small.jpg"
     },
+    "capabilities": {
+        "solar_intensity": {
+            "type": "number",
+            "title": {
+                "en": "Solar intensity",
+                "nl": "Zonne-intensiteit"
+            },
+            "getable": true,
+            "setable": false,
+            "units": {
+                "en": "%"
+            },
+            "step": "0.1",
+            "min": 0,
+            "max": 100
+        },
+        "heating_power": {
+            "type": "number",
+            "title": {
+                "en": "Heating",
+                "nl": "Verwarming"
+            },
+            "getable": true,
+            "setable": false,
+            "units": {
+                "en": "%"
+            },
+            "step": 1,
+            "min": 0,
+            "max": 100
+        },
+        "detect_open_window": {
+            "type": "boolean",
+            "title": {
+                "en": "Open window detection",
+                "nl": "Open raam detectie"
+            },
+            "getable": true,
+            "setable": false
+        },
+        "smart_heating": {
+            "type": "boolean",
+            "title": {
+                "en": "Smart heating",
+                "nl": "Slim verwarmen"
+            },
+            "getable": true,
+            "setable": true
+        },
+        "weather_state": {
+          "type": "string",
+          "title": {
+              "en": "Weather",
+              "nl": "Weer"
+          },
+          "getable": true,
+          "setable": false,
+          "values": [
+            { "id": "night_clear", "title": { "en": "Clear night", "nl": "Heldere nacht" } },
+            { "id": "night_cloudy", "title": { "en": "Cloudy night", "nl": "Bewolkte nacht" } },
+            { "id": "cloudy", "title": { "en": "Cloudy", "nl": "Bewolkt" } },
+            { "id": "cloudy_mostly", "title": { "en": "Mostly cloudy", "nl": "Overwegend bewolkt" } },
+            { "id": "cloudy_partly", "title": { "en": "Partly cloudy", "nl": "Deels bewolkt" } },
+            { "id": "foggy", "title": { "en": "Foggy", "nl": "Mistig" } },
+            { "id": "drizzle", "title": { "en": "Drizzle", "nl": "Motregen" } },
+            { "id": "scattered_rain", "title": { "en": "Scattered rain", "nl": "Af en toe buien" } },
+            { "id": "rain", "title": { "en": "Rain", "nl": "Regen" } },
+            { "id": "snow", "title": { "en": "Snow", "nl": "Sneeuw" } },
+            { "id": "thunderstorms", "title": { "en": "Thunderstorms", "nl": "Onweersbuien" } },
+            { "id": "sun", "title": { "en": "Sunny", "nl": "Zonnig" } },
+            { "id": "windy", "title": { "en": "Windy", "nl": "Winderig" } }
+          ]
+        },
+        "dummy_mobile": {
+            "type": "string",
+            "title": {
+                "en": " "
+            },
+            "getable": true,
+            "setable": false
+        }
+    },
     "drivers": [
         {
             "id": "tado",
             "name": {
-                "en": "Tado"
+                "en": "Heating",
+                "nl": "Verwarming"
             },
-            "class": "thermostat",
-            "capabilities": [ "target_temperature", "measure_temperature", "measure_humidity" ],
             "images": {
                 "large": "drivers/tado/assets/images/large.png",
                 "small": "drivers/tado/assets/images/small.png"
+            },
+            "class": "thermostat",
+            "capabilities": [
+                "target_temperature",
+                "measure_temperature.inside",
+                "heating_power",
+                "measure_humidity",
+                "detect_open_window",
+                "smart_heating",
+                "measure_temperature.outside",
+                "solar_intensity",
+                "weather_state",
+                "dummy_mobile"
+            ],
+      			"capabilitiesOptions": {
+      				"target_temperature": {
+                "step": 0.5,
+                "min": 5,
+                "max": 25
+      				},
+      				"measure_temperature.inside": {
+      					"title": {
+      						"en": "Temperature",
+      						"nl": "Temperatuur"
+      					}
+      				},
+      				"heating_power": {
+      					"title": {
+      						"en": "Heating",
+      						"nl": "Verwarming"
+      					}
+      				},
+      				"measure_humidity": {
+      					"title": {
+      						"en": "Humidity",
+      						"nl": "Vochtigheid"
+      					}
+      				},
+      				"detect_open_window": {
+      					"title": {
+      						"en": "Open window detection",
+      						"nl": "Open raam detectie"
+      					}
+      				},
+      				"smart_heating": {
+      					"title": {
+      						"en": "Smart heating",
+      						"nl": "Slim verwarmen"
+      					}
+      				},
+      				"measure_temperature.outside": {
+      					"title": {
+      						"en": "Temperature outside",
+      						"nl": "Temperatuur buiten"
+      					}
+      				},
+      				"weather_state": {
+      					"title": {
+      						"en": "Weather",
+      						"nl": "Weer"
+      					}
+      				},
+      				"dummy_mobile": {
+      					"title": {
+      						"en": " ",
+      						"nl": " "
+      					}
+      				}
+      			},
+            "mobile": {
+                "components": [
+                    {
+                        "id": "button",
+                        "capabilities": ["smart_heating"],
+                        "options": {
+                            "icons": {
+                                "smart_heating": "drivers/tado/assets/button_smart.svg"
+                            }
+                        }
+                    },
+                    {
+                        "id": "sensor",
+                        "capabilities": [
+                          "measure_temperature.inside",
+                          "heating_power",
+                          "measure_humidity",
+                          "detect_open_window",
+                          "smart_heating",
+                          "measure_temperature.outside",
+                          "solar_intensity",
+                          "weather_state",
+                          "dummy_mobile"
+                        ],
+                        "options": {
+                            "showTitle": true,
+                            "icons": {
+                                "measure_temperature.inside": "drivers/tado/assets/temp.svg",
+                                "heating_power": "drivers/tado/assets/heating.svg",
+                                "measure_humidity": "drivers/tado/assets/humidity.svg",
+                                "detect_open_window": "drivers/tado/assets/open_window.svg",
+                                "smart_heating": "drivers/tado/assets/smart_heating.svg",
+                                "measure_temperature.outside": "drivers/tado/assets/temp_out.svg",
+                                "solar_intensity": "drivers/tado/assets/sun.svg",
+                                "weather_state": "drivers/tado/assets/weather.svg",
+                                "dummy_mobile": "drivers/tado/assets/dummy.svg"
+                            },
+                            "detect_open_window": {
+                                "noblink": false,
+                                "invert": false,
+                                "label": {
+                                    "true": { "en": "Heating paused", "nl": "Verwarming gepauzeerd" },
+                                    "false": { "en": "Not detected", "nl": "Niet gedetecteerd" }
+                                }
+                            },
+                            "smart_heating": {
+                                "noblink": false,
+                                "invert": true,
+                                "label": {
+                                    "true": { "en": "Active", "nl": "Actief" },
+                                    "false": { "en": "Manual operation", "nl": "Hand- bediening" }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "id": "thermostat",
+                        "capabilities": [ "target_temperature" ]
+                    }
+                ]
             },
             "pair": [
                 {
@@ -43,26 +263,203 @@
                     "id": "add_tado",
                     "template": "add_devices"
                 }
+            ],
+            "settings": [
+                {
+                    "type": "group",
+                    "label": {
+                        "en": "Location settings",
+                        "nl": "Locatie instellingen"
+                    },
+                    "children": [
+                        {
+                            "id": "zone_id",
+                            "type": "number",
+                            "label": {
+                                "en": "tado° Zone number",
+                                "nl": "tado° Zone nummer"
+                            },
+                            "value": 1,
+                            "hint": {
+                              "en": "The zone number appears in the URL (address bar) when you visit the zone on my.tado.com with your web browser.",
+                              "en": "Het zone nummer verschijnt in de URL (adresbalk) wanneer je met je webbrowser de zone bezoekt op my.tado.com"
+                          },
+                            "attr": {
+                                "min": 1,
+                                "max": 255
+                            }
+                        }
+                    ]
+                }
             ]
         }
     ],
     "flow": {
         "triggers": [
             {
-                "id": "outside_temperature",
+                "id": "inside_temperature",
                 "title": {
-                    "en": "Outside temp changed",
-					"nl": "Buiten temperatuur is gewijzigd"
+                    "en": "Temperature has changed",
+                    "nl": "Temperatuur is veranderd"
                 },
+        				"hint": {
+        					"en": "This card starts a Flow when a change in temperature is observed.",
+        					"nl": "Dit kaartje start een Flow wanneer een verandering van de temperatuur wordt waargenomen."
+        				},
                 "tokens": [
                     {
                         "name": "temperature",
+                        "type": "number",
                         "title": {
-                            "en": "temp"
+                            "en": "temperature",
+                            "nl": "temperatuur"
                         },
-                        "example": {
-                            "en": "18"
-                        }
+                        "example": 18
+                    }
+                ],
+                "args": [
+                  {
+                    "name": "device",
+                    "type": "device",
+                    "filter": "driver_id=tado&capabilities=measure_temperature.inside"
+                  }
+                ]
+            },
+            {
+                "id": "humidity",
+                "title": {
+                    "en": "Humidity changed",
+                    "nl": "Luchtvochtigheid is veranderd"
+                },
+        				"hint": {
+        					"en": "This card starts a Flow when a change in humidity is observed.",
+        					"nl": "Dit kaartje start een Flow wanneer een verandering van de luchtvochtigheid wordt waargenomen."
+        				},
+                "tokens": [
+                    {
+                        "name": "percentage",
+                        "type": "number",
+                        "title": {
+                            "en": "humidity (%)",
+                            "nl": "vochtigheid (%)"
+                        },
+                        "example": 37
+                    }
+                ],
+                "args": [
+                  {
+                    "name": "device",
+                    "type": "device",
+                    "filter": "driver_id=tado&capabilities=measure_humidity"
+                  }
+                ]
+            },
+            {
+                "id": "heating_power",
+                "title": {
+                    "en": "Heating power has changed",
+                    "nl": "Verwarmingsvermogen is veranderd"
+                },
+        				"hint": {
+        					"en": "This card starts a Flow when a change in heating power is observed.",
+        					"nl": "Dit kaartje start een Flow wanneer een verandering van het verwarmingsvermogen wordt waargenomen."
+        				},
+                "tokens": [
+                    {
+                        "name": "percentage",
+                        "type": "number",
+                        "title": {
+                            "en": "power (%)",
+                            "nl": "vermogen (%)"
+                        },
+                        "example": 45
+                    }
+                ],
+                "args": [
+                  {
+                    "name": "device",
+                    "type": "device",
+                    "filter": "driver_id=tado&capabilities=heating_power"
+                  }
+                ]
+            },
+            {
+                "id": "detect_open_window",
+                "title": {
+                    "en": "Open Window Detection has changed",
+                    "nl": "Open Raam Detectie is veranderd"
+                },
+        				"hint": {
+        					"en": "This card starts a Flow when the status of the Open Window Detection changes.",
+        					"nl": "Dit kaartje start een Flow wanneer de status van de Open Raam Detectie verandert."
+        				},
+                "tokens": [
+                    {
+                        "name": "detection",
+                        "type": "boolean",
+                        "title": {
+                            "en": "active (true or not)",
+                            "nl": "actief (waar of niet)"
+                        },
+                        "example": true
+                    }
+                ],
+                "args": [
+                  {
+                    "name": "device",
+                    "type": "device",
+                    "filter": "driver_id=tado&capabilities=detect_open_window"
+                  }
+                ]
+            },
+            {
+                "id": "smart_heating",
+                "title": {
+                    "en": "Smart heating has changed",
+                    "nl": "Slim verwarmen is veranderd"
+                },
+        				"hint": {
+        					"en": "This card starts a Flow when the status of Smart Heating changes.",
+        					"nl": "Dit kaartje start een Flow wanneer de status van Slim Verwarmen verandert."
+        				},
+                "tokens": [
+                    {
+                        "name": "detection",
+                        "type": "boolean",
+                        "title": {
+                            "en": "active (true or not)",
+                            "nl": "actief (waar of niet)"
+                        },
+                        "example": true
+                    }
+                ],
+                "args": [
+                  {
+                    "name": "device",
+                    "type": "device",
+                    "filter": "driver_id=tado&capabilities=smart_heating"
+                  }
+                ]
+            },
+            {
+                "id": "outside_temperature",
+                "title": {
+                    "en": "Outside temperature has changed",
+                    "nl": "Buiten temperatuur is veranderd"
+                },
+        				"hint": {
+        					"en": "This card starts a Flow when a change in the outside temperature is observed. This information is NOT measured by your thermostat, but is delivered to tado via an external party!",
+        					"nl": "Dit kaartje start een Flow wanneer een verandering van de buitentemperatuur wordt waargenomen. Deze informatie wordt NIET door je thermostaat gemeten, maar wordt via een externe partij aan tado geleverd!"
+        				},
+                "tokens": [
+                    {
+                        "name": "temperature",
+                        "type": "number",
+                        "title": {
+                            "en": "temperature",
+                            "nl": "temperatuur"
+                        },
+                        "example": 18
                     }
                 ]
             },
@@ -70,14 +467,18 @@
                 "id": "solar_intensity",
                 "title": {
                     "en": "Solar intensity changed",
-					"nl": "Intensiteit zon is gewijzigd"
+                    "nl": "Zonne-intensiteit is veranderd"
                 },
+        				"hint": {
+        					"en": "This card starts a Flow when a change in the Solar Intensity is observed. This information is NOT measured by your thermostat, but is delivered to tado via an external party!",
+        					"nl": "Dit kaartje start een Flow wanneer een verandering van de Zonne-intensiteit wordt waargenomen. Deze informatie wordt NIET door je thermostaat gemeten, maar wordt via een externe partij aan tado geleverd!"
+        				},
                 "tokens": [
                     {
                         "name": "intensity",
                         "title": {
                             "en": "intensity (%)",
-							"nl": "intensiteit (%)"
+                            "nl": "intensiteit (%)"
                         },
                         "example": {
                             "en": "50"
@@ -88,18 +489,33 @@
             {
                 "id": "weather",
                 "title": {
-                    "en": "Weather changed",
-					"nl": "Weerstoestand is gewijzigd"
+                    "en": "The weather changes",
+                    "nl": "Het weer veranderd"
                 },
+        				"hint": {
+        					"en": "This card starts a Flow when a change in the Weather Conditions is observed. This information is NOT measured by your thermostat, but is delivered to tado via an external party!",
+        					"nl": "Dit kaartje start een Flow wanneer een verandering van de Weersomstandigheden wordt waargenomen. Deze informatie wordt NIET door je thermostaat gemeten, maar wordt via een externe partij aan tado geleverd!"
+        				},
                 "tokens": [
+                    {
+                        "name": "condition",
+                        "title": {
+                            "en": "conditions",
+                            "nl": "omstandigheden"
+                        },
+                        "example": {
+                            "en": "Sunny, Rain, Foggy, Thunderstorms etc.",
+                            "nl": "Zonnig, Regen, Mist, Onweersbuien etc."
+                        }
+                    },
                     {
                         "name": "state",
                         "title": {
-                            "en": "state",
-							"nl": "toestand"
+                            "en": "id",
+                            "nl": "id"
                         },
                         "example": {
-                            "en": "SUN, RAIN, <unknown>"
+                            "en": "sun, rain, foggy, thunderstorms etc."
                         }
                     }
                 ]
@@ -107,18 +523,23 @@
             {
                 "id": "weather_state",
                 "title": {
-                    "en": "Weather state changed to",
-					"nl": "Weerstoestand is gewijzigd naar"
+                    "en": "The weather changes to",
+                    "nl": "Het weer veranderd naar"
                 },
+        				"hint": {
+        					"en": "This card starts a Flow when the selected Weather Condition occurs. This information is NOT measured by your thermostat, but is delivered to tado via an external party!",
+        					"nl": "Dit kaartje start een Flow wanneer de geselecteerd Weersomstandigheid optreed. Deze informatie wordt NIET door je thermostaat gemeten, maar wordt via een externe partij aan tado geleverd!"
+        				},
                 "tokens": [
                     {
                         "name": "state",
                         "title": {
-                            "en": "state",
-							"nl": "toestand"
+                            "en": "id",
+                            "nl": "id"
                         },
                         "example": {
-                            "en": "SUN, RAIN, <unknown>"
+                            "en": "Sunny, Rain, Foggy, Thunderstorms etc.",
+                            "nl": "Zonnig, Regen, Mist, Onweersbuien etc."
                         }
                     }
                 ],
@@ -126,79 +547,94 @@
                     {
                         "name": "current_state",
                         "type": "dropdown",
-                        "values": [ 
-                            { "id": "CLEAR", "label": { "en": "Clear (Night)" } },
-                            { "id": "NIGHT_CLOUDY", "label": { "en": "Cloudy (Night)" } },
-                            { "id": "CLOUDY_PARTLY", "label": { "en": "Cloudy (Partly)" } },
-                            { "id": "RAIN", "label": { "en": "Raining" } },
-                            { "id": "SCATTERED_RAIN", "label": { "en": "Scattered Rain" } },
-                            { "id": "THUNDERSTORMS", "label": { "en": "Storming" } },
-                            { "id": "SUN", "label": { "en": "Sunny" } },
-                            { "id": "WINDY", "label": { "en": "Windy" } }
+                        "values": [
+                            { "id": "night_clear", "label": { "en": "Clear night", "nl": "Heldere nacht" } },
+                            { "id": "night_cloudy", "label": { "en": "Cloudy night", "nl": "Bewolkte nacht" } },
+                            { "id": "cloudy", "label": { "en": "Cloudy", "nl": "Bewolkt" } },
+                            { "id": "cloudy_mostly", "label": { "en": "Mostly cloudy", "nl": "Overwegend bewolkt" } },
+                            { "id": "cloudy_partly", "label": { "en": "Partly cloudy", "nl": "Deels bewolkt" } },
+                            { "id": "foggy", "label": { "en": "Foggy", "nl": "Mistig" } },
+                            { "id": "drizzle", "label": { "en": "Drizzle", "nl": "Motregen" } },
+                            { "id": "scattered_rain", "label": { "en": "Scattered rain", "nl": "Af en toe buien" } },
+                            { "id": "rain", "label": { "en": "Rain", "nl": "Regen" } },
+                            { "id": "snow", "label": { "en": "Snow", "nl": "Sneeuw" } },
+                            { "id": "thunderstorms", "label": { "en": "Thunderstorms", "nl": "Onweersbuien" } },
+                            { "id": "sun", "label": { "en": "Sunny", "nl": "Zonnig" } },
+                            { "id": "windy", "label": { "en": "Windy", "nl": "Winderig" } }
                         ]
-                    }
-                ]
-            },
-            {
-                "id": "humidity",
-                "title": {
-                    "en": "Humidity changed",
-					"nl": "Luchtvochtigheid is gewijzigd"
-                },
-                "tokens": [
-                    {
-                        "name": "percent",
-                        "title": {
-                            "en": "Humidity (%)"
-                        },
-                        "example": {
-                            "en": "37"
-                        }
                     }
                 ]
             }
         ],
+
         "conditions": [
             {
                 "id": "weather_state",
                 "title": {
                     "en": "Weather state !{{is|is not}}",
-					"nl": "Weerstoestand !{{is|is niet}}"
+                    "nl": "Weerstoestand !{{is|is niet}}"
                 },
                 "args": [
                     {
                         "name": "current_state",
                         "type": "dropdown",
-                        "values": [ 
-                            { "id": "CLEAR", "label": { "en": "Clear (Night)" } },
-                            { "id": "NIGHT_CLOUDY", "label": { "en": "Cloudy (Night)" } },
-                            { "id": "CLOUDY_PARTLY", "label": { "en": "Cloudy (Partly)" } },
-                            { "id": "RAIN", "label": { "en": "Raining" } },
-                            { "id": "SCATTERED_RAIN", "label": { "en": "Scattered Rain" } },
-                            { "id": "THUNDERSTORMS", "label": { "en": "Storming" } },
-                            { "id": "SUN", "label": { "en": "Sunny" } },
-                            { "id": "WINDY", "label": { "en": "Windy" } }
+                        "values": [
+                            { "id": "night_clear", "label": { "en": "Clear night", "nl": "Heldere nacht" } },
+                            { "id": "night_cloudy", "label": { "en": "Cloudy night", "nl": "Bewolkte nacht" } },
+                            { "id": "cloudy", "label": { "en": "Cloudy", "nl": "Bewolkt" } },
+                            { "id": "cloudy_mostly", "label": { "en": "Mostly cloudy", "nl": "Overwegend bewolkt" } },
+                            { "id": "cloudy_partly", "label": { "en": "Partly cloudy", "nl": "Deels bewolkt" } },
+                            { "id": "foggy", "label": { "en": "Foggy", "nl": "Mistig" } },
+                            { "id": "drizzle", "label": { "en": "Drizzle", "nl": "Motregen" } },
+                            { "id": "scattered_rain", "label": { "en": "Scattered rain", "nl": "Af en toe buien" } },
+                            { "id": "rain", "label": { "en": "Rain", "nl": "Regen" } },
+                            { "id": "snow", "label": { "en": "Snow", "nl": "Sneeuw" } },
+                            { "id": "thunderstorms", "label": { "en": "Thunderstorms", "nl": "Onweersbuien" } },
+                            { "id": "sun", "label": { "en": "Sunny", "nl": "Zonnig" } },
+                            { "id": "windy", "label": { "en": "Windy", "nl": "Winderig" } }
                         ]
                     }
                 ]
             }
         ],
+
     	"actions": [
-        	{
+          {
             	"id": "set_auto",
             	"title": {
-                	"en": "Set heating to auto",
-					"nl": "Automatische verwarming"
-
-            	}
+                	"en": "Smart heating (tado° schedule)",
+                  "nl": "Slim verwarmen (tado° schema)"
+            	},
+              "hint": {
+                "en": "This card activates the Smart Heating mode.",
+                "nl": "Dit kaartje activeert de Slim Verwarmen modus."
+              },
+              "args": [
+                {
+                  "name": "device",
+                  "type": "device",
+                  "filter": "driver_id=tado"
+                }
+              ]
         	},
         	{
             	"id": "set_off",
             	"title": {
                 	"en": "Turn heating off",
-					"nl": "Zet verwarming af"
+                  "nl": "Verwarming uitschakelen"
 
-            	}
+            	},
+              "hint": {
+                "en": "This card turns off the heating.",
+                "nl": "Dit kaartje schakelt de verwarming uit."
+              },
+              "args": [
+                {
+                  "name": "device",
+                  "type": "device",
+                  "filter": "driver_id=tado"
+                }
+              ]
         	}
     	]
     },

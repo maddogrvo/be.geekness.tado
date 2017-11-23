@@ -1,0 +1,37 @@
+{
+  "settings": {
+    "txt_login_info": "Deze app heeft je tado accountgegevens nodig om te communiceren met ",
+    "txt_login_info_link": "https://my.tado.com",
+    "txt_login_info2": ". Deze gegevens worden lokaal opgeslagen op Homey en worden alleen gebruikt voor beveiligde communicatie tussen deze app en de Tado webserver.",
+    "txt_login": "Login",
+    "txt_password": "Wachtwoord",
+    "txt_secret_info": "Het Tado Secret is beschikbaar op ",
+    "txt_secret_link": "https://my.tado.com/webapp/env.js",
+    "txt_secret_info2": ", onderaan achter 'clientSecret:'. Dit is een statische globale waarde (voor alle gebruikers), maar Tado kan dit op elk moment veranderen.<br> Gebruik de lange code ZONDER de buitenste aanhalingstekens.",
+    "txt_tado_secret": "Tado Secret",
+    "txt_update": "Ververs thermostaat gegevens iedere",
+    "txt_debug": "Logboek inschakelen",
+    "txt_yes": "Ja",
+    "txt_no": "Nee",
+    "txt_settings_save": "Wijzigingen bewaren",
+    "txt_settings_saved": "Je instellingen zijn opgeslagen, nu kun je je Tado zones via Apparaten toevoegen",
+    "txt_heating_zone": "Verwarmingszone",
+
+    "txt_start_title": "Voorbereiding...",
+    "txt_start_wait": "Als deze tekst niet binnen enkele seconden verdwijnt, ga dan naar Homey's Instellingen pagina en klik op het tado menu-item om je account gegevens en de tado-secret code te controleren",
+
+    "night_clear": "Heldere nacht",
+    "night_cloudy": "Bewolkte nacht",
+    "cloudy": "Bewolkt",
+    "cloudy_mostly": "Overwegend bewolkt",
+    "cloudy_partly": "Deels bewolkt",
+    "foggy": "Mistig",
+    "drizzle": "Motregen",
+    "scattered_rain": "Af en toe buien",
+    "rain": "Regen",
+    "snow": "Sneeuw",
+    "thunderstorms": "Onweersbuien",
+    "sun": "Zonnig",
+    "windy": "Winderig"
+  }
+}

@@ -1,5 +1,13 @@
 "use strict";
 
+var devices  = {},
+    tado_ZoneData           = {}, // future use.
+    tado_updateTime         = { value:60 },
+    tado_updateInterval     = null, // refresh/update devices interval id
+    weather_updateTime      = { value:900 },
+    weather_updateInterval  = null, // refresh/update weather interval id
+    log_homeid              = undefined;
+
 var _        = require('lodash');
 var path     = require('path');
 var request  = require('request');
@@ -9,57 +17,109 @@ var fs       = require('fs');
 var logfile  = 'userdata/tado.log';
 var debug    = false;
 var loggedin = false;
-var devices  = {};
 
 var BASE_URL = 'https://my.tado.com/api/v2';
 var AUTH_URL = 'https://auth.tado.com';
 
-log4js.loadAppender('file');
-log4js.addAppender(log4js.appenders.file(logfile), 'tado');
-var logger   = log4js.getLogger('tado');
+//log4js.loadAppender('file');
+//log4js.addAppender(log4js.appenders.file(logfile), 'tado');
 
+if (fs.existsSync(logfile)) {
+    fs.unlink(logfile);
+}
+log4js.configure({
+  appenders: [
+    { type: 'console' },
+    {
+      type: 'file',
+      filename: 'userdata/tado.log',
+      "maxLogSize": 200000,
+      category: 'tado'
+    }
+  ]
+});
+var logger   = log4js.getLogger('tado');
 
 var self = module.exports = {
 
     init: function( devices_data, callback ) {
-        
-        logger.debug('Initializing.. ' + devices_data.length + ' devices found.');
-
-        devices_data.forEach( function( device_data ){
-            devices[ device_data.id ] = {
-                data    : device_data,
-                state   : {}
-            };
-        });
-
         getAccessToken( function( err, access_token ) {
-            if (access_token == null) {
-                logger.debug("[TADO-INIT] No access token available");
-                return false;
-            }
+          if (access_token == null) {
+              logger.debug("[TADO-INIT] No access token available");
+              return false;
+          }
 
-            for (var device_id in devices) {
-                devices[device_id].data.access_token = access_token;
-                getState( devices[device_id].data, callback );
-            }
+          getHomeIdByAccessToken( access_token, function( error, homeid ) {
+            // init exisiting devices
+            devices_data.forEach( function( device_data ){
+              initDevice( device_data );
+              // get zone_id from settings
+              module.exports.getSettings( device_data, function( err, settings ){
+                devices[device_data.id].access_token = access_token;
+                devices[device_data.id].homeid = homeid;
+                devices[device_data.id].zoneid = settings.zone_id;
+                getState( device_data, callback );
+              });
+            });
+          });
         });
 
-        // update info every 5 minutes
-        setInterval(function(){
-            logger.debug('Recurring Interval');
-            getAccessToken( function( err, access_token ) {
-                if (access_token == null) {
-                    logger.error("[TADO-RECURRING] No access token available, not executing recurring tasks (temporarily)");
-                    return false;
-                }
+        // set & run update interval
+        function setUpdateInterval(sec){
+          clearInterval(tado_updateInterval);
+          tado_updateInterval = setInterval(function(){
+              addLogItem('Interval: Checking for data changes on tado server');
 
-                for (var device_id in devices) {
-                    devices[device_id].data.access_token = access_token;
-                    getState( devices[device_id].data );
-                }
-            });
-        }, 1000 * 60 * 5);
+              getAccessToken( function( err, access_token ) {
+                  if (access_token == null) {
+                      logger.error("[TADO-RECURRING] No access token available, not executing recurring tasks (temporarily)");
+                      return false;
+                  }
 
+                  for (var device_id in devices) {
+                      devices[device_id].access_token = access_token;
+                      getState( devices[device_id].data, callback );
+                  }
+              });
+          }, 1000 * sec);
+        }
+
+        // get and init settings
+        tado_updateTime = Homey.manager('settings').get('updateTime');
+        //weather_updateTime = Homey.manager('settings').get('weatherTime');
+        if(tado_updateTime === undefined){tado_updateTime = {value: 60}; }
+        //if(weather_updateTime === undefined){weather_updateTime = {value: 900}; }
+        setUpdateInterval(tado_updateTime.value);
+        //setWeatherInterval(weather_updateTime.value);
+
+        Homey.manager('settings').on('set', function (setting) {
+        	switch(setting){
+        	case 'updateTime':
+        		tado_updateTime = Homey.manager('settings').get('updateTime');
+            setUpdateInterval(tado_updateTime.value);
+            addLogItem('Devices update interval time set to ' + tado_updateTime.value + ' sec.');
+        		break;
+/*
+          case 'debug':
+        		debug = Homey.manager('settings').get('debug');
+            switch(debug){
+              case '0':
+              console.log('Full log off');
+              if (fs.existsSync(logfile)) { fs.unlink(logfile); }
+              break;
+
+              case '1':
+                console.log('Full log on');
+                break;
+            }
+            break;
+            */
+        	}
+
+        });
+
+
+        // on flow triggers
         Homey.manager('flow').on('trigger.weather_state', function( callback, args, state ) {
             if ( args.current_state == state.state ) {
                 callback( null, true );
@@ -68,6 +128,7 @@ var self = module.exports = {
             }
         });
 
+        // on flow conditions
         Homey.manager('flow').on('condition.weather_state', function( callback, args ) {
             if (devices[0] !== undefined) {
                 if ( args.current_state == devices[0].state.weather_state ) {
@@ -78,40 +139,37 @@ var self = module.exports = {
             callback( null, false );
         });
 
-        Homey.manager('flow').on('action.set_auto', function( callback, args ){
-            for (var i in devices) {
-                if (devices[i].data) {
-                    updateTado( devices[i].data, 'DELETE');
-                }
+        // on flow actions
+        Homey.manager('flow').on('action.set_auto', function( callback, args, state ){
+            //console.log(args); // { 'my_arg': 'bar', 'device': { id: 'blahblah' } }, this is the user input + device data
+            //console.log(state); // { 'my_state': 'bar' }, this is the state parameter, as passed in trigger()
+            if (devices[args.device.id].data) {
+              updateTado( devices[args.device.id].data, 'DELETE');
+              addLogItem('Setting Smart heating for zone ' + devices[args.device.id].zoneid );
             }
-
-            callback( null, true ); 
+            callback( null, true );
         });
 
-        Homey.manager('flow').on('action.set_off', function( callback, args ){
-            for (var i in devices) {
-                if (devices[i].data) {
-                    updateTado( devices[i].data, {
-                        setting: {
-                            type: "HEATING",
-                            power: "OFF",
-                        },
-                        termination: {type: "MANUAL"}
-                    });
-                }
+        Homey.manager('flow').on('action.set_off', function( callback, args, state ){
+            if (devices[args.device.id].data) {
+              updateTado( devices[args.device.id].data, {
+                setting: {
+                    type: "HEATING",
+                    power: "OFF",
+                },
+                termination: {type: "MANUAL"}
+              });
             }
-
-            callback( null, true ); 
+            callback( null, true );
         });
 
         if (devices_data.length === 0) {
             callback();
         }
-
     },
 
     deleted: function( device_data ) {
-        logger.debug('Deleting Tado', device_data.id);
+        addLogItem('Deleting device Tado ' + device_data.id + ' (zone ' + devices[ device_data.id ].zoneid + ' controller)');
         delete devices[ device_data.id ];
     },
 
@@ -119,132 +177,286 @@ var self = module.exports = {
         target_temperature: {
             get: function( device_data, callback ){
 
-                var device = devices[ device_data.id ];
-
-                if (typeof device == 'undefined') return callback( new Error("invalid_device") );
-                if (device.state === undefined || device.state.target_temperature === undefined) return callback( new Error('Device initialization unfinished') );
-
-                logger.debug('Capability: Get Target Temperature (= ' + device.state.target_temperature.toString() + ')');
+                var device = getDeviceByData( device_data );
+                if( device instanceof Error ) return callback( device );
+                addLogItem('Capability for zone ' + devices[ device_data.id ].zoneid + ': Get Target Temperature (= ' + device.state.target_temperature + ')');
 
                 callback( null, device.state.target_temperature );
             },
             set: function( device_data, target_temperature, callback ){
-
                 if (!loggedin) return callback( new Error("no_session") );
+                var device = getDeviceByData( device_data );
+                if( device instanceof Error ) return callback( device );
 
-                logger.debug('Capability: Set Target Temperature to ' + target_temperature.toString());
-                var device = devices[ device_data.id ];
+                // temporary until Homey step-0.1-thermostat bug has been fixed (v1.5.6?)
+                target_temperature = Math.round( Number( target_temperature ) / 0.5) * 0.5;
 
-                if (typeof device == 'undefined') return callback( new Error("invalid_device") );
-
-                // limit temperature
-                if (target_temperature < 5) target_temperature = 5;
-                if (target_temperature > 30) target_temperature = 30;
-
-                // update if different
+                addLogItem('Capability for zone ' + devices[ device_data.id ].zoneid + ': Set Target Temperature to ' + target_temperature);
+                // update online if different
                 if (target_temperature != device.state.target_temperature) {
-                
-                    target_temperature = (target_temperature * 2).toFixed() / 2;
-
                     device.state.target_temperature = target_temperature;
-
                     updateTado( device_data, {
                         setting: {
-                            type: "HEATING", 
-                            power: "ON", 
+                            type: "HEATING",
+                            power: "ON",
                             temperature: { celsius: target_temperature }
-                        }, 
+                        },
                         termination: {type: "MANUAL"}
                     });
-
                     self.realtime(device_data, 'target_temperature', target_temperature);
+                    self.realtime(device_data, 'smart_heating', false);
+                    setTimeout(function(){
+                      getState( device_data, callback );
+                    }, 5000);
+                    //getState( device_data, callback );
                 }
-
                 callback( null, device.state.target_temperature );
             }
         },
+
         measure_temperature: {
-            get: function( device_data, callback ) {
-                
-                var device = devices[ device_data.id ];
-                if (typeof device == 'undefined') return callback( new Error("invalid_device") );
+            inside: {
+                get: function( device_data, callback ) {
+                    var device = getDeviceByData( device_data );
+                    if( device instanceof Error ) return callback( device );
 
-                logger.debug('Capability: Get Measure Temperature (= ' + device.state.measure_temperature + ')');
+                    addLogItem('Capability for zone ' + devices[ device_data.id ].zoneid + ': Get Measure Temperature (= ' + device.state.measure_temperature.inside + ')');
 
-                callback( null, device.state.measure_temperature );
+                    callback( null, device.state.measure_temperature.inside );
+                }
+            },
+            outside: {
+                get: function( device_data, callback ) {
+                    var device = getDeviceByData( device_data );
+                    if( device instanceof Error ) return callback( device );
+
+                    addLogItem('Capability for zone ' + devices[ device_data.id ].zoneid + ': Get Measure Temperature Outside (= ' + device.state.measure_temperature.outside + ')');
+
+                    callback( null, device.state.measure_temperature.outside );
+                }
             }
         },
-     	measure_humidity: {
-            get: function( device_data, callback ) {
-                
-                var device = devices[ device_data.id ];
-                if (typeof device == 'undefined') return callback( new Error("invalid_device") );
+       	measure_humidity: {
+              get: function( device_data, callback ) {
+                  var device = getDeviceByData( device_data );
+                  if( device instanceof Error ) return callback( device );
 
-                logger.debug('Capability: Get Measure Humidity (= ' + device.state.measure_humidity + ')');
+                  addLogItem('Capability for zone ' + devices[ device_data.id ].zoneid + ': Get Measure Humidity (= ' + device.state.measure_humidity + ')');
 
-                callback( null, device.state.measure_humidity );
-            }
-	 	}
+                  callback( null, device.state.measure_humidity );
+              }
+  	 	  },
+       	solar_intensity: {
+              get: function( device_data, callback ) {
+                  var device = getDeviceByData( device_data );
+                  if( device instanceof Error ) return callback( device );
+
+                  addLogItem('Capability for zone ' + devices[ device_data.id ].zoneid + ': Get Solar intensity (= ' + device.state.solar_intensity + ')');
+
+                  callback( null, device.state.solar_intensity );
+              }
+  	 	  },
+       	heating_power: {
+              get: function( device_data, callback ) {
+                  var device = getDeviceByData( device_data );
+                  if( device instanceof Error ) return callback( device );
+
+                  addLogItem('Capability for zone ' + devices[ device_data.id ].zoneid + ': Get Heating power (= ' + device.state.heating_power + ')');
+
+                  callback( null, device.state.heating_power );
+              }
+  	 	  },
+       	detect_open_window: {
+              get: function( device_data, callback ) {
+                  var device = getDeviceByData( device_data );
+                  if( device instanceof Error ) return callback( device );
+
+                  addLogItem('Capability for zone ' + devices[ device_data.id ].zoneid + ': Get Open Window detection (= ' + device.state.detect_open_window + ')');
+
+                  callback( null, device.state.detect_open_window );
+              }
+  	 	  },
+       	smart_heating: {
+              get: function( device_data, callback ) {
+                  var device = getDeviceByData( device_data );
+                  if( device instanceof Error ) return callback( device );
+
+                  addLogItem('Capability for zone ' + devices[ device_data.id ].zoneid + ': Get Smart heating setting (= ' + device.state.smart_heating + ')');
+
+                  callback( null, device.state.smart_heating );
+              },
+              set: function( device_data, smart_heating, callback ){
+                  if (!loggedin) return callback( new Error("no_session") );
+                  var device = getDeviceByData( device_data );
+                  if( device instanceof Error ) return callback( device );
+                  addLogItem('Capability for zone ' + devices[ device_data.id ].zoneid + ': Set Smart heating to ' + smart_heating);
+
+                  // update online if different
+                  if (smart_heating != device.state.smart_heating) {
+                      device.state.smart_heating = smart_heating;
+                      switch(smart_heating){
+                        case true:
+                          updateTado( device_data, 'DELETE');
+                          setTimeout(function(){
+                            getState( device_data, callback );
+                          }, 5000);
+                          addLogItem('Activating Smart heating for zone ' + device.zoneid );
+                          break;
+                      }
+                      self.realtime(device_data, 'smart_heating', smart_heating);
+                  }
+                  callback( null, device.state.smart_heating );
+              }
+  	 	  },
+       	weather_state: {
+              get: function( device_data, callback ) {
+                  var device = getDeviceByData( device_data );
+                  if( device instanceof Error ) return callback( device );
+
+                  addLogItem('Capability for zone ' + devices[ device_data.id ].zoneid + ': Get Weather Condition (= ' + device.state.weather_state + ')');
+
+                  callback( null, device.state.weather_state );
+              }
+  	 	  },
+       	dummy_mobile: {
+              get: function( device_data, callback ) {
+                  var device = getDeviceByData( device_data );
+                  if( device instanceof Error ) return callback( device );
+
+                  addLogItem('Capability for zone ' + devices[ device_data.id ].zoneid + ': Get dummy_mobile');
+
+                  callback( null, device.state.dummy_mobile );
+              }
+  	 	  }
+
     },
 
     pair: function( socket ) {
+        addLogItem('Pairing Init');
 
-        logger.debug('Pairing Init');
+
+        var uniqueId = 'tado_' + (new Date()).getTime().toString(16);
+        var newdevice = getNewDeviceObject();
+        newdevice.name = __("settings.txt_heating_zone");
+        newdevice.data.id = uniqueId;
 
         socket.on('start', () => {
-            logger.debug('pairing has started...');
+            addLogItem('pairing has started...');
 
             getAccessToken( function( err, access_token ) {
-                if ( err ) logger.debug(err);
-
-                newdevice.name                 = 'Tado';
-                newdevice.data.id              = 'Tado';
-                newdevice.data.access_token    = access_token;
-
-                logger.debug('Authorized.');
-
-                socket.emit( 'authorized', true );
+                if ( err ){
+                  logger.debug (err);
+                }
+                if(access_token != null) {
+                  newdevice.access_token = access_token;
+                  addLogItem('Authorized.');
+                  socket.emit( 'authorized', true );
+                }
             });
         });
-
-
-        var newdevice = {
-            name: undefined,
-            data: {
-                id              : undefined,
-                homeid          : undefined,
-                zoneid          : '1',
-                access_token    : undefined
-            }
-        };
 
         /* TODO: multiple Tados/Zones */
         socket.on('list_devices', function( data, callback ) {
-            logger.debug('List devices');
-            getHomeId( newdevice, function( error, homeid ) {
-                logger.debug('Adding device');
-                newdevice.data.homeid = homeid;
-                newdevice.data.zoneid = '1';
-                callback( null, [ newdevice ] );
-            });
+            addLogItem('List devices');
+
+          getAccessToken( function( err, access_token ) {
+              if ( err ) logger.debug (err);
+              for (var device_id in devices) {
+                  devices[device_id].access_token = access_token;
+                  getState( devices[device_id].data, callback );
+              }
+            //getWeather( callback );
+          });
+
+          getHomeId( newdevice, function( error, homeid ) {
+              if ( error ) logger.debug(error);
+              addLogItem('Adding device');
+              newdevice.homeid = homeid;
+              callback( null, [ newdevice ] );
+          });
         });
 
         socket.on('add_device', function( device, callback ) {
-            logger.debug('Add Device');
-            logger.debug(device);
-            addDevice( device.data, function( error ) {
+            addLogItem('Add Device');
+            addDevice( device, function( error ) {
             });
             callback( null, true );
         });
 
+    },
+    settings: function( device_data, newSettingsObj, oldSettingsObj, changedKeysArr, callback ) {
+      switch(changedKeysArr[0]){
+        case 'zone_id':
+          var device = getDeviceByData( device_data );
+          addLogItem('Zone number changed from ' + device.zoneid + ' to ' + newSettingsObj.zone_id );
+          device.zoneid = newSettingsObj.zone_id;
+
+          // refresh access_token & capabilities for all devices
+          getAccessToken( function( err, access_token ) {
+            if (access_token == null) {
+                logger.debug("No access token available to refresh capabilities after zone change");
+                return false;
+            }
+            for (var device_id in devices) {
+                devices[device_id].access_token = access_token;
+                getState( devices[device_id].data, callback );
+            }
+
+          });
+          break;
+      }
+      callback( null, true );
     }
 };
 
+// a helper method to get a device from the devices list by it's device_data object
+function getDeviceByData( device_data ) {
+    var device = devices[ device_data.id ];
+    if( typeof device === 'undefined' ) {
+        return new Error("invalid_device");
+    } else {
+        return device;
+    }
+}
+
+// a helper method to add a device to the devices list
+function initDevice( device_data ) {
+  devices[ device_data.id ] = getNewDeviceObject();
+  devices[ device_data.id ].data = device_data;
+}
+
+function getNewDeviceObject(){
+    return {
+        id              : undefined,
+        data: {
+            id          : undefined
+        },
+        state           : {
+            target_temperature: 0,
+            measure_temperature: {
+              inside: 0,
+              outside: 0
+            },
+            heating_power: 0,
+            measure_humidity: 0,
+            detect_open_window: false,
+            smart_heating: false,
+            solar_intensity: 0,
+            weather_state: "cloudy"
+        },
+        name : '',
+        access_token : undefined,
+        zoneid : 1,
+        homeid : undefined
+    };
+}
+
+
 function getAccessToken( callback ) {
-    var login = Homey.manager('settings').get( 'login' );
-    var password = Homey.manager('settings').get( 'password' );
-    var tado_secret = Homey.manager('settings').get( 'tado_secret' );
-    var access_token = null;
+    var login = Homey.manager('settings').get( 'login' ),
+        password = Homey.manager('settings').get( 'password' ),
+        tado_secret = Homey.manager('settings').get( 'tado_secret' ),
+        access_token = null;
 
     callback = callback || function(){};
 
@@ -253,8 +465,7 @@ function getAccessToken( callback ) {
         return;
     }
 
-    logger.debug('Getting access token');
-
+    addLogItem('Request access token');
     request({
         method: 'POST',
         url: `${AUTH_URL}/oauth/token?client_id=tado-web-app&client_secret=${tado_secret}&grant_type=password&scope=home.user&username=${login}&password=${password}`,
@@ -265,63 +476,109 @@ function getAccessToken( callback ) {
             return callback(err);
         }
 
-        if (debug) {
-            logger.debug('[TADO-RESPONSE] Getting access token');
-            logger.debug(body);
-        }
-
+        addLogItem('[TADO-RESPONSE] Receiving access token');
         loggedin = true;
 
         if (body != undefined) {
             access_token = body.access_token;
         }
-
         return callback( null, access_token );
     });
 
 }
 
 
-function getHomeId( device, callback ) {
+
+function getHomeIdByAccessToken( tado_access_token, callback ) {
     if (!loggedin) return;
-    logger.debug('Getting home id');
-    logger.debug(device);
+    addLogItem('Getting home id');
 
     call({
         path            : '/me',
-        access_token    : device.data.access_token
+        access_token    : tado_access_token
     }, function(err, result, body){
         if (err) return callback(err);
 
+        //console.log('getHomeIdByAccessToken');
+        //console.log(body);
+
         if (body.homes !== undefined) {
+            log_homeid = body.homes[0].id;
             callback( null, body.homes[0].id);
         }
     });
 }
 
-function getState( device_data, callback ) {
+function getHomeId( device, callback ) {
     if (!loggedin) return;
+    addLogItem('Getting home id');
 
-    callback = callback || function(){};
+    call({
+        path            : '/me',
+        access_token    : device.access_token
+    }, function(err, result, body){
+        if (err) return callback(err);
 
-    logger.debug('Getting state (target temp, current temp)');
-    logger.debug(device_data);
+        if (body.homes !== undefined) {
+            log_homeid = body.homes[0].id;
+            callback( null, body.homes[0].id);
+        }
+    });
+}
 
-    getStateInternal( device_data, callback );
+function getTadoZones( device_data, callback ){
 
-    getStateExternal( device_data );
+    var device = getDeviceByData( device_data );
+    call({
+        path            : '/homes/' +  device.homeid + '/zones',
+        access_token    : device.access_token
+    }, function(err, result, body){
+        if ( err && callback ) return callback(err);
 
+//console.log('getTadoZones');
+//console.log(body);
+
+        tado_ZoneData = {};
+        body.forEach(function(item, index) {
+          tado_ZoneData[item.id] = item;
+
+/*
+          console.log('Zone ' + item.id + ':');
+          console.log(tado_ZoneData[item.id].deviceTypes);
+          console.log(tado_ZoneData[item.id].devices);
+          tado_ZoneData[item.id].devices.forEach(function( devitem, devindex ){
+            console.log('Device ' + devitem.serialNo + ' characteristics:');
+            console.log( devitem.characteristics);
+          });
+*/
+
+        });
+
+
+        if (callback) {
+            callback(null, tado_ZoneData);
+        }
+    });
 }
 
 
-/*
-    Get temperatures provided by Tado device
-*/
+function getState( device_data, callback ) {
+    if (!loggedin) return;
+    callback = callback || function(){};
+
+    getTadoZones( device_data, callback )
+    getStateInternal( device_data, callback );
+
+    getStateExternal( device_data );
+}
+
+/* Get internal data provided by tado device */
 function getStateInternal( device_data, callback ) {
 
+    var device = getDeviceByData( device_data );
     call({
-        path            : '/homes/' + device_data.homeid + '/zones/' + device_data.zoneid + '/state',
-        access_token    : device_data.access_token
+        path            : '/homes/' + device.homeid + '/zones/' + device.zoneid + '/state',
+        access_token    : device.access_token
     }, function(err, result, body){
         if ( err && callback ) return callback(err);
 
@@ -332,43 +589,91 @@ function getStateInternal( device_data, callback ) {
 
         var value = null;
 
-        if (body !== undefined) {
+        if (body !== undefined && devices[ device_data.id ] !== undefined) {
+console.log('');
+console.log('getStateInternal');
+console.log(body);
+console.log('');
+
+            // target temperature setting in zone
             value = _.get(body, 'setting.temperature.celsius');
             if (value !== undefined && value !== null) {
-            // set state
-                if (devices[ device_data.id ].state.target_temperature != value) {
-                    devices[ device_data.id ].state.target_temperature = value;
-                    self.realtime( device_data, 'target_temperature', value );
+              //value = Number( value );
+              // temporary until Homey bug for 0.1 is solved (v1.5.6?)
+              value = Math.round( Number( value ) / 0.5) * 0.5;
+              if (devices[ device_data.id ].state.target_temperature != value) {
+                  devices[ device_data.id ].state.target_temperature = value;
+                  self.realtime( device_data, 'target_temperature', value );
+                  addLogItem("Trigger Target Temperature flows for zone " + devices[ device_data.id ].zoneid + " with value: " + value);
+                  Homey.manager('flow').triggerDevice( 'target_temperature', { temperature: value }, null, device_data);
+              }
+            }
+
+            // temperature measurement in zone
+            value = _.get(body, 'sensorDataPoints.insideTemperature.celsius');
+            if (value !== undefined && value !== null) {
+                value = Math.round( 10 * Number( value ) ) / 10;
+                if (devices[ device_data.id ].state.measure_temperature.inside != value) {
+                    devices[ device_data.id ].state.measure_temperature.inside = value;
+                    self.realtime( device_data, 'measure_temperature.inside', value );
+                    addLogItem("Trigger Temperature flows for zone " + devices[ device_data.id ].zoneid + " with value: " + value);
+                    Homey.manager('flow').triggerDevice('inside_temperature', { temperature: value }, null, device_data);
                 }
             }
 
-            value = _.get(body, 'sensorDataPoints.insideTemperature.celsius');
-            if (devices[ device_data.id ].state.measure_temperature != value) {
-                devices[ device_data.id ].state.measure_temperature = value;
-                self.realtime( device_data, 'measure_temperature', value );
-                Homey.manager('insights').createEntry( 'temperature', value, new Date(), function(err, success){
-
-                    Homey.manager('insights').createLog( 'temperature', {
-                        label: { en: 'Temperature' },
-                        type: 'number',
-                        units: { en: '°C' },
-                        decimals: 2
-                    }, function callback(err , success){
-                        if (!success) return logger.error('Create Log Temp', err);
-                    });
-                    //if (!success) return logger.error('Create Entry Inside Temperature', err);
-                });
-            }
-
+            // humidity measurement in zone
             value = _.get(body, 'sensorDataPoints.humidity.percentage');
             if (value !== undefined && value !== null) {
-                if (devices[ device_data.id ].state.humidity != value) {
-                    devices[ device_data.id ].state.humidity = value;
-                    logger.debug("Trigger Humidity Flow with value", value);
-                    Homey.manager('flow').trigger('humidity', { percentage: value });
-                    Homey.manager('insights').createEntry( 'humidity', value, new Date(), function(err, success){
-                        if (!success) return logger.debug('Create Entry Humidity', err);
-                    });
+                value = Math.round( Number( value ) );
+                if (devices[ device_data.id ].state.measure_humidity != value) {
+                    devices[ device_data.id ].state.measure_humidity = value;
+                    self.realtime( device_data, 'measure_humidity', value );
+                    addLogItem("Trigger Humidity flows for zone " + devices[ device_data.id ].zoneid + " with value: " + value);
+                    Homey.manager('flow').triggerDevice('humidity', { percentage: value }, null, device_data);
+                }
+            }
+
+            // Heating power measurement in zone
+            value = _.get(body, 'activityDataPoints.heatingPower.percentage');
+            if (value !== undefined && value !== null) {
+                value = Math.round( Number( value ) );
+                if (devices[ device_data.id ].state.heating_power != value) {
+                    devices[ device_data.id ].state.heating_power = value;
+                    self.realtime( device_data, 'heating_power', value );
+                    addLogItem("Trigger Heating Power flows for zone " + devices[ device_data.id ].zoneid + " with value: " + value);
+                    Homey.manager('flow').triggerDevice('heating_power', { percentage: value }, null, device_data);
+                }
+            }
+
+            // Open window detection in zone
+            value = _.get(body, 'openWindow');
+            if (value !== undefined) {
+                if( value == 'null' || value == null){
+                  value = false;
+                } else {
+                  value = true;
+                }
+                if (devices[ device_data.id ].state.detect_open_window != value) {
+                    devices[ device_data.id ].state.detect_open_window = value;
+                    self.realtime( device_data, 'detect_open_window', value );
+                    addLogItem("Trigger Open Window Detection flows for zone " + devices[ device_data.id ].zoneid + " with value: " + value);
+                    Homey.manager('flow').triggerDevice('detect_open_window', { detection: value }, null, device_data);
+                }
+            }
+
+            // Smart heating on/off detection
+            value = _.get(body, 'overlayType');
+            if (value !== undefined) {
+                if( value == 'null' || value == null){
+                  value = true; // overlayType = null. smart heating activated
+                } else {
+                  value = false; // overlayType = 'MANUAL'.
+                }
+                if (devices[ device_data.id ].state.smart_heating != value) {
+                    devices[ device_data.id ].state.smart_heating = value;
+                    self.realtime( device_data, 'smart_heating', value );
+                    addLogItem("Trigger Smart Heating flows for zone " + devices[ device_data.id ].zoneid + " with value: " + value);
+                    Homey.manager('flow').triggerDevice('smart_heating', { detection: value }, null, device_data);
                 }
             }
         }
@@ -379,156 +684,126 @@ function getStateInternal( device_data, callback ) {
     });
 }
 
-/*
-    Get outside temperature, solar intensity & weather state provided by Tado service (via external partners?)
-*/
-function getStateExternal( device_data, callback ) {
+/* Get outside temperature, solar intensity & weather state provided by Tado service via external partner */
+function getStateExternal(  device_data, callback ) {
+
+    var device = getDeviceByData( device_data );
 
     call({
-        path            : '/homes/' + device_data.homeid + '/weather',
-        access_token    : device_data.access_token
+        path            : '/homes/' + device.homeid + '/weather',
+        access_token    : device.access_token
     }, function(err, result, body){
         if ( err && callback ) return callback(err);
 
-        var value = null, value_rounded = null;
+        var value = null;
 
-        value = _.get(body, 'outsideTemperature.celsius');
-        if (value !== undefined && value !== null) {
-        // set state
-            value_rounded = Math.round(value * 2) / 2;
-            if (devices[ device_data.id ].state.outside_temperature != value) {
-                devices[ device_data.id ].state.outside_temperature = value;
-                logger.debug("Trigger Outside Temp Flow with value", value);
-                Homey.manager('flow').trigger('outside_temperature', { temperature: value_rounded });
-                Homey.manager('insights').createEntry( 'outside_temperature', value, new Date(), function(err, success){
-                    if( err ) return Homey.error(err);
-                });
+        if (body !== undefined && devices[ device_data.id ] !== undefined) {
+//console.log('getStateExternal');
+//console.log(body);
+
+            // temperature outside, according to tado webservice
+            value = Number( _.get(body, 'outsideTemperature.celsius') );
+            if (value !== undefined && value !== null) {
+                value = Math.round( 10 * Number( value ) ) / 10;
+                if (devices[ device_data.id ].state.outside_temperature != value) {
+                    devices[ device_data.id ].state.outside_temperature = value;
+                    self.realtime( device_data, 'measure_temperature.outside', value );
+
+                    addLogItem("Trigger Outside Temperature flows for zone " + devices[ device_data.id ].zoneid + " with value: " + value);
+                    Homey.manager('flow').trigger('outside_temperature', { temperature: value });
+              }
             }
-        }
 
-        value = _.get(body, 'solarIntensity.percentage');
-        if (value !== undefined && value !== null) {
-            if (devices[ device_data.id ].state.solar_intensity != value) {
-                devices[ device_data.id ].state.solar_intensity = value;
-                logger.debug("Trigger Solar Flow with value", value);
-                Homey.manager('flow').trigger('solar_intensity', { intensity: value });
-                Homey.manager('insights').createEntry( 'solar_intensity', value, new Date(), function(err, success){
-                    if( err ) return Homey.error(err);
-                });
+            // solar intensity, according to tado webservice
+            value = Number( _.get(body, 'solarIntensity.percentage') );
+            if (value !== undefined && value !== null) {
+                if (devices[ device_data.id ].state.solar_intensity != value) {
+                    devices[ device_data.id ].state.solar_intensity = value;
+                    self.realtime( device_data, 'solar_intensity', value );
+
+                    addLogItem("Trigger Solar Intensity flows for zone " + devices[ device_data.id ].zoneid + " with value: " + value);
+                    Homey.manager('flow').trigger('solar_intensity', { intensity: value });
+                }
             }
-        }
 
-        value = _.get(body, 'weatherState.value');
-        if (value !== undefined && value !== null) {
-            if (devices[ device_data.id ].state.weather_state != value) {
-                devices[ device_data.id ].state.weather_state = value;
-                logger.debug("Trigger Weather Flow with value", value);
-                Homey.manager('flow').trigger('weather', { state: value });
-                Homey.manager('flow').trigger('weather_state', { state: value }, { state: value });
-                // RAIN, SUN, NIGHT_CLOUDY, ..
+            // weather condition, according to tado webservice
+            value = _.get(body, 'weatherState.value');
+            if (value !== undefined && value !== null) {
+                value = value.toLowerCase();
+                if (devices[ device_data.id ].state.weather_state != value) {
+                    devices[ device_data.id ].state.weather_state = value;
+                    self.realtime( device_data, 'weather_state', value );
+
+                    var txtvalue = __("settings." + value );
+                    addLogItem("Trigger Weather State flows for zone " + devices[ device_data.id ].zoneid + " with state: " + value );
+                    Homey.manager('flow').trigger('weather', { condition: txtvalue, state: value });
+                    Homey.manager('flow').trigger('weather_state', { state: value }, { state: value });
+
+                    // log possible unknown weatherState
+                    var knownState = [
+                          "night_clear", "night_cloudy",
+                          "cloudy", "cloudy_mostly", "cloudy_partly",
+                          "foggy", "drizzle", "scattered_rain", "rain", "snow", // snow = expected to exist
+                          "thunderstorms", "sun", "windy"
+                        ],
+                        newState = true;
+                    knownState.forEach( function(item){
+                       if(item == value){ newState = false; }
+                    });
+                    if(newState){ logger.debug("Unknown weatherState detected: " + value); }
+                }
             }
-        }
 
-        if (callback) {
-            callback(null, devices[ device_data.id ].state);
+            if (callback) {
+                callback(null, devices[ device_data.id ].state);
+            }
         }
     });
 }
 
-/*
-    Add a device by creating an object etc
-*/
-function addDevice( device_data, callback ) {
-    logger.debug('Initializing device');
+/* Add a device by creating an object etc */
+function addDevice( device, callback ) {
+    addLogItem('Initializing device');
 
-    devices[ device_data.id ] = {
-        id: device_data.id,
-        data: device_data,
-        state: {
-            target_temperature: false,
-            measure_temperature: false,
-            outside_temperature: false,
-            solar_intensity: false,
-            weather_state: false
-        }   
-    };
+    var device_data = device.data,
+        xAccess = device.access_token,
+        xZone = device.zoneid,
+        xHome = device.homeid,
+        xName = device.name;
 
-    logger.debug('Creating Insight Logs - Begin');
+    initDevice( device_data );
+    devices[device_data.id].access_token = xAccess;
+    devices[device_data.id].zoneid = xZone;
+    devices[device_data.id].name = xName;
+    devices[device_data.id].homeid = xHome;
 
-    Homey.manager('insights').createLog( 'solar_intensity', {
-        label: { en: 'Solar Intensity' },
-        type: 'number',
-        units: { en: '%' },
-        decimals: 0
-    }, function callback(err , success){
-        if (!success) return logger.error('Create Log Solar', err);
+    module.exports.setSettings( devices[device_data.id].data, {
+        zone_id: xZone
+    }, function( err, settings ){
+        logger.debug('error: ' + settings + '\n\r' + err)
     });
 
-    Homey.manager('insights').createLog( 'humidity', {
-        label: { en: 'Humidity' },
-        type: 'number',
-        units: { en: '%' },
-        decimals: 0
-    }, function callback(err , success){
-        if (!success) return logger.error('Create Log Humidity', err);
-    });
-
-    Homey.manager('insights').createLog( 'outside_temperature', {
-        label: { en: 'Outside Temperature' },
-        type: 'number',
-        units: { en: '°C' },
-        decimals: 1
-    }, function callback(err , success){
-        if (!success) return logger.error('Create Log Outside Temp', err);
-    });
-
-    Homey.manager('insights').createLog( 'target_temperature', {
-        label: { en: 'Target Temperature' },
-        type: 'number',
-        units: { en: '°C' },
-        decimals: 1
-    }, function callback(err , success){
-        if (!success) return logger.error('Create Log Target Temp', err);
-    });
-
-    Homey.manager('insights').createLog( 'temperature', {
-        label: { en: 'Temperature' },
-        type: 'number',
-        units: { en: '°C' },
-        decimals: 2
-    }, function callback(err , success){
-        if (!success) return logger.error('Create Log Temp', err);
-    });
-
-    logger.debug('Creating Insight Logs - End');
-
-    // refresh access token if needed
+    // refresh access token and get capabilitiy states
     getAccessToken( function( err, access_token ) {
-        device_data.access_token = access_token;
-
-        // add webhook listener
-        registerWebhook( device_data );
-
-        getState( device_data );
+        devices[ device_data.id ].access_token = access_token;
+        getState( device_data, callback );
     });
 }
 
-/*
-    Update Tado via their API
-*/
+/*  Update tado target temperature online via API */
 function updateTado( device_data, json, callback ) {
-    logger.debug('Setting temp');
+    addLogItem('Updating target temperature for zone ' + devices[ device_data.id ].zoneid + ' to ' + (devices[ device_data.id ].state.target_temperature) );
 
     callback = callback || function(){};
 
     getAccessToken( function( err, access_token ) {
         if (access_token == null) {
-            logger.debug("[TADO-UPDATE] No access token available, cannot perform update");
+            logger.debug("[TADO-UPDATE] No access token available. Server update not possible");
             callback( null, true );
             return false;
         }
 
-        device_data.access_token = access_token;
+        devices[ device_data.id ].access_token = access_token;
 
         var method = 'PUT';
 
@@ -537,10 +812,11 @@ function updateTado( device_data, json, callback ) {
             method = 'DELETE';
         }
 
+        var device = getDeviceByData( device_data );
         call({
             method          : method,
-            path            : '/homes/' + device_data.homeid + '/zones/' + device_data.zoneid + '/overlay',
-            access_token    : device_data.access_token,
+            path            : '/homes/' + device.homeid + '/zones/' + device.zoneid + '/overlay',
+            access_token    : devices[ device_data.id ].access_token,
             json            : json
         }, function(err, result, body){
             if (err) return callback(err);
@@ -552,9 +828,9 @@ function updateTado( device_data, json, callback ) {
     });
 }
 
-/*
-    Make an API call
-*/
+
+
+// ***** tado API call
 function call( options, callback ) {
     callback = callback || function(){};
 
@@ -572,6 +848,7 @@ function call( options, callback ) {
         options.path = options.path.substring(1);
     }
 
+    addLogItem('[TADO-REQUEST] ' + options.method + ' ' + BASE_URL + '/' + options.path);
     // make the request
     request({
         method: options.method,
@@ -581,10 +858,7 @@ function call( options, callback ) {
             'Authorization': 'Bearer ' + options.access_token
         }
     }, function (err, result, body) {
-        logger.debug('[TADO-REQUEST] ' + options.method + ' ' + BASE_URL + '/' + options.path);
-        logger.debug(options.json);
-        logger.debug('[TADO-RESPONSE] ' + options.path);
-        logger.debug(body);
+        addLogItem('[TADO-RESPONSE] ' + options.path);
         callback(err, result, body);
     });
 
@@ -597,17 +871,19 @@ function call( options, callback ) {
 function registerWebhook( device_data ) {
 
     Homey.manager('cloud').registerWebhook(Homey.env.WEBHOOK_ID, Homey.env.WEBHOOK_SECRET, {
-        tado_homeid: device_data.homeid,
-        tado_zoneid: device_data.zoneid
+      tado_homeid: devices[ device_data.id ].homeid,
+      //tado_homeid: device_data.homeid,
+      tado_zoneid: devices[ device_data.id ].zoneid
+      //tado_zoneid: device_data.zoneid
     }, function onMessage( args ) {
 
-        logger.debug("Incoming webhook for Tado", device_data.homeid, args);
+        addLogItem("Incoming webhook for Tado " + devices[ device_data.id ].homeid + '\n\r' + args);
 
-        var device = devices[ device_data.homeid ];
+        var device = devices[ device_data.id ].homeid;
         if (typeof device == 'undefined') return callback( new Error("invalid_device") );
 
         if ( ((new Date()) - device.lastUpdated) < (30 * 1000) ) {
-            return logger.debug("Ignored webhook, just updated the Thermostat!");
+            return addLogItem("Ignored webhook, just updated the Thermostat!");
         }
 
         // TODO: don't do this is just changed value
@@ -616,20 +892,31 @@ function registerWebhook( device_data ) {
             self.realtime(device_data, 'target_temperature', device.state.target_temperature);
         }
 
-        if (args.body.room_temperature && args.body.room_temperature != device.state.measure_temperature) {
-            device.state.measure_temperature = args.body.room_temperature;
-            self.realtime(device_data, 'target_temperature', device.state.measure_temperature);
+        if (args.body.room_temperature && args.body.room_temperature != device.state.measure_temperature.inside) {
+            device.state.measure_temperature.inside = args.body.room_temperature;
+            self.realtime(device_data, 'measure_temperature.inside', device.state.measure_temperature.inside);
         }
 
     }, function callback(){
-        logger.debug("Webhook registered for Tado", device_data.zoneid);
+        addLogItem("Webhook registered for Tado zone " +  devices[ device_data.id ].zoneid);
     });
 }
 
+
+
+function addLogItem( ltext ) {
+    if(debug){
+      if(log_homeid !== undefined){
+        while( ltext.indexOf(log_homeid) > -1) { ltext = ltext.replace(log_homeid, '*private*'); }
+      }
+      logger.debug( ltext );
+    } else {
+      console.log(ltext);
+    }
+}
 
 function deleteLog() {
     if (fs.existsSync(logfile)) {
         fs.unlink(logfile);
     }
 }
-
