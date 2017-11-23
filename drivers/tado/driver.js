@@ -17,6 +17,7 @@ var fs       = require('fs');
 var logfile  = 'userdata/tado.log';
 var debug    = false;
 var loggedin = false;
+var terminationType = 'TADO_MODE';
 
 var BASE_URL = 'https://my.tado.com/api/v2';
 var AUTH_URL = 'https://auth.tado.com';
@@ -91,14 +92,20 @@ var self = module.exports = {
         //if(weather_updateTime === undefined){weather_updateTime = {value: 900}; }
         setUpdateInterval(tado_updateTime.value);
         //setWeatherInterval(weather_updateTime.value);
-
+		terminationType = Homey.manager('settings').get('terminationType').value;
+		console.log(terminationType);
+		
         Homey.manager('settings').on('set', function (setting) {
         	switch(setting){
-        	case 'updateTime':
-        		tado_updateTime = Homey.manager('settings').get('updateTime');
-            setUpdateInterval(tado_updateTime.value);
-            addLogItem('Devices update interval time set to ' + tado_updateTime.value + ' sec.');
+				case 'updateTime':
+					tado_updateTime = Homey.manager('settings').get('updateTime');
+					setUpdateInterval(tado_updateTime.value);
+					addLogItem('Devices update interval time set to ' + tado_updateTime.value + ' sec.');
         		break;
+				case 'terminationType':
+					terminationType = Homey.manager('settings').get('terminationType').value;
+					console.log(terminationType);
+				break;
 /*
           case 'debug':
         		debug = Homey.manager('settings').get('debug');
@@ -115,7 +122,6 @@ var self = module.exports = {
             break;
             */
         	}
-
         });
 
 
@@ -157,7 +163,7 @@ var self = module.exports = {
                     type: "HEATING",
                     power: "OFF",
                 },
-                termination: {type: "MANUAL"}
+                termination: {type: terminationType}
               });
             }
             callback( null, true );
@@ -201,7 +207,7 @@ var self = module.exports = {
                             power: "ON",
                             temperature: { celsius: target_temperature }
                         },
-                        termination: {type: "MANUAL"}
+                        termination: {type: terminationType}
                     });
                     self.realtime(device_data, 'target_temperature', target_temperature);
                     self.realtime(device_data, 'smart_heating', false);

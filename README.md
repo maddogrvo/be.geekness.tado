@@ -71,6 +71,8 @@ Various items are available in the mobile app:
 
 
 ## Changelog
+### 0.7.2
+  * Update manual override mode. Adding setting to choose manual or by tado
 
 ### 0.7.0
   * Update/make-over bij Alex van den Berg (OpenMind_NL). Adding multiple zone control, extended mobile display and various bug fixes.

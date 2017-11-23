@@ -40,6 +40,13 @@
                   <option value="3600">60 min.</option>
                 </select>
             </div>
+			<div class="field row">
+                <span data-i18n="settings.txt_termination"></span>
+                <select id="terminationType" name="terminationType">
+                  <option value="TADO_MODE" data-i18n="settings.txt_termination_tado" selected></option>
+                  <option value="MANUAL" data-i18n="settings.txt_termination_user"</option>
+                </select>
+            </div>
             <!--div class="field row">
                 <span data-i18n="settings.txt_debug"></span>
                 <select id="debug" name="debug">
@@ -72,6 +79,11 @@
             Homey.get('updateTime', function( err, updateTime ) {
                 document.getElementById('updateTime').selectedIndex = updateTime.selectedIndex;
             });
+
+            Homey.get('terminationType', function( err, terminationType ) {
+                document.getElementById('terminationType').selectedIndex = terminationType.selectedIndex;
+            });
+
             Homey.ready();
         }
 
@@ -80,10 +92,16 @@
               selectedIndex: document.getElementById('updateTime').selectedIndex,
               value: document.getElementById('updateTime').value
             }
+			var terminationType = {
+              selectedIndex: document.getElementById('terminationType').selectedIndex,
+              value: document.getElementById('terminationType').value
+            }
             Homey.set('login', document.getElementById('login').value);
             Homey.set('password',  document.getElementById('password').value);
             Homey.set('tado_secret',  document.getElementById('tado_secret').value);
             Homey.set('updateTime',  updateTime);
+			Homey.set('terminationType', terminationType);
+			
             //Homey.set('debug',  document.getElementById('debug').selectedIndex);
             alert( __("settings.txt_settings_saved") );
         }
